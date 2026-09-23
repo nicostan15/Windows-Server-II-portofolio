@@ -1,0 +1,19 @@
+# Vagrant / VirtualBox
+.vagrant/
+*.box
+*.log
+
+# ISO's en installers (te groot voor git / indiening)
+*.iso
+*.exe
+*.msi
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp
+
+# Secrets - nooit wachtwoorden in git!
+secrets.ps1
+*.env
