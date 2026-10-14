@@ -67,7 +67,7 @@ Vagrant.configure("2") do |config|
     server1.vm.provision "shell", inline: "Write-Output 'server1 is terug online na domain controller promotie.'"
     # OU-structuur (>=3 OU's) en gebruikers (>=2 Domain Admin, >=2 Domain User) aanmaken
     # Moet NA promote-dc.ps1 + reboot draaien, zodat de ActiveDirectory module beschikbaar is
-    server1.vm.provision "shell", path: "scripts/server1/create-ous-users.ps1"
+    server1.vm.provision "dns-primary", type: "shell", path: "scripts/server1/configure-dns-server1.ps1"
   end
 
 

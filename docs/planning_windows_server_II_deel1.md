@@ -32,8 +32,8 @@
 
 ## Week 3 — 12/10 t/m 18/10: DNS
 
-- [ ] Primaire DNS-rol op server1, forward + reverse lookup zone
-- [ ] A-records en PTR-records voor de 3 servers (enkel host-only IP, niet NAT!)
+- [x] Primaire DNS-rol op server1, forward + reverse lookup zone
+- [x] A-records en PTR-records voor de 3 servers (enkel host-only IP, niet NAT!)
 - [ ] server2 instellen als secundaire DNS-server
 - [ ] Zone transfers testen (tijdelijk CNAME-record aanmaken op primaire DNS en verificeren op secundaire)
 - [ ] Voorkomen dat client en NAT-interfaces zichzelf registreren in DNS
