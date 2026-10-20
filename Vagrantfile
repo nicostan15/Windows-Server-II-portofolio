@@ -1,131 +1,198 @@
 # Windows Server II - Vagrant template
-#  2026-2027
+# 2026-2027
 # ------------------------------------
-#                                      
-# This is the Vagrantfile for the assignment of Windows Server II - 2025-2026. 
-# The setup consists of 3 Windows Server machines (no GUI) and 1 Windows 11 client.
 #
-# Use `vagrant up` to bring up the environment, 
-#   or `vagrant reload` to redeploy the environment after changing this file.
+# Omgeving:
+# - 3 Windows Server 2025 Core-machines
+# - 1 Windows 11 Enterprise-client
 #
-# You are allowed to modify this file as needed.
-# However, you are not allowed to use any other vagrant boxes than the ones used in this file:
-# - Windows Server 2025 core (no GUI): gusztavvargadr/windows-server-2025-standard-core
-# - Windows 11 Enterprise 25H2: gusztavvargadr/windows-11-25h2-enterprise
-# For both versions, the version is pinned - do not change this.
-# You can change the amount of vRAM and vCPU assigned to each VM if needed.
-# Each VM has 2 network interfaces:
-# - first adapter in (default) NAT mode, for internet access + vagrant
-# - second adapter connected to a (private) Host-Only network (no IP configuration done, this needs to be done by PowerShell!)
-# Use PowerShell scripts to configure the second NIC interfaces, 
-#   and to install and configure the required software.
-# You are allowed to add lines for automatic provisioning.
-
-
+# De boxnamen en vastgepinde versies mogen niet gewijzigd worden.
+#
+# Elke VM heeft twee netwerkinterfaces:
+# - NAT: internet en Vagrant
+# - Host-Only: interne communicatie
+#
+# De IP-adressen in private_network zijn placeholders.
+# De echte Host-Only IP-configuratie gebeurt via PowerShell.
+#
+# Alle VM's starten:
+#   vagrant up
+#
+# Alleen primaire DNS opnieuw configureren:
+#   vagrant provision server1 --provision-with dns-primary
+#
+# Alleen secundaire DNS opnieuw configureren:
+#   vagrant provision server2 --provision-with dns-secondary
 
 Vagrant.configure("2") do |config|
 
-
   # ------------------------------------------------------------------
-  # WinRM-fix: nodig omdat het promoveren van een server tot domain
-  # controller (Install-ADDSForest) de standaard WinRM negotiate/NTLM
-  # authenticatie breekt. Plaintext + basic auth blijft wel werken.
-  # Zie: https://github.com/hashicorp/vagrant/issues/13505
+  # WinRM-workaround voor de huidige labomgeving na AD-promotie.
+  # Bestaande werkende instellingen behouden.
   # ------------------------------------------------------------------
   config.winrm.transport = :plaintext
   config.winrm.basic_auth_only = true
   config.winrm.retry_limit = 60
   config.winrm.retry_delay = 10
 
+  # Maximale wachttijd voor het opstarten van een VM.
+  config.vm.boot_timeout = 600
 
-  # Server 1
+  # ==================================================================
+  # Server 1 — Domeincontroller, primaire DNS en later IIS
+  # ==================================================================
   config.vm.define "server1" do |server1|
-    # This is the base image for the VM - do not change this!
+
     server1.vm.box = "gusztavvargadr/windows-server-2025-standard-core"
     server1.vm.box_version = "2607.0.0"
-    # Connect the second adapter to an internal network, do not configure IP (the provided IP is just a place holder)
-    server1.vm.network "private_network", ip: "192.168.25.10", auto_config: false
-    # Set the host name of the VM
+
+    server1.vm.network "private_network",
+      ip: "192.168.25.10",
+      auto_config: false
+
     server1.vm.hostname = "server1"
-    # VirtualBox specific configuration
+
     server1.vm.provider "virtualbox" do |vb|
-      # VirtualBox Display Name
       vb.name = "server1"
-      # VirtualBox Group
       vb.customize ["modifyvm", :id, "--groups", "/WS2"]
-      # 2GB vRAM
       vb.memory = "2048"
-      # 2vCPU
       vb.cpus = "2"
     end
-    # Configure the Host-Only network interface (192.168.26.10)
-    server1.vm.provision "shell", path: "scripts/configure-network.ps1", args: "-IPAddress 192.168.26.10"
-    # Promote server1 to domain controller (forest WS26-JD.hogent, functional level Windows Server 2025)
-    # reboot: true -> laat Vagrant de herstart na de promotie correct afhandelen (voorkomt WinRM auth crash)
-    server1.vm.provision "shell", path: "scripts/server1/promote-dc.ps1", args: "-DomainName WS26-JD.hogent -DomainNetbiosName WS26-JD -SafeModePassword JouwSterkWachtwoord123!", reboot: true
-    # Extra provisioner die enkel dient om te bevestigen dat de VM na de reboot weer bereikbaar is via WinRM
-    server1.vm.provision "shell", inline: "Write-Output 'server1 is terug online na domain controller promotie.'"
-    # OU-structuur (>=3 OU's) en gebruikers (>=2 Domain Admin, >=2 Domain User) aanmaken
-    # Moet NA promote-dc.ps1 + reboot draaien, zodat de ActiveDirectory module beschikbaar is
-    server1.vm.provision "dns-primary", type: "shell", path: "scripts/server1/configure-dns-server1.ps1"
+
+    # 1. Host-Only IP instellen.
+    server1.vm.provision "shell",
+      path: "scripts/configure-network.ps1",
+      args: "-IPAddress 192.168.26.10"
+
+    server1.vm.provision "dns-registration",
+      type: "shell",
+      path: "scripts/configure-dns-registration.ps1",
+      args: "-Mode Server"
+
+    # 2. Domeincontroller-promotie.
+    # Let op: reboot: true kan ook bij herprovisioning herstarten,
+    # zelfs wanneer het script de promotie zelf overslaat.
+    server1.vm.provision "shell",
+      path: "scripts/server1/promote-dc.ps1",
+      args: "-DomainName WS26-JD.hogent -DomainNetbiosName WS26-JD -SafeModePassword JouwSterkWachtwoord123!",
+      reboot: true
+
+    # 3. Bevestigen dat WinRM na de reboot opnieuw bereikbaar is.
+    server1.vm.provision "shell",
+      inline: "Write-Output 'server1 is terug online na domain controller promotie.'"
+
+    # 4. OU-structuur en gebruikers aanmaken.
+    server1.vm.provision "ad-users",
+      type: "shell",
+      path: "scripts/server1/create-ous-users.ps1"
+
+    # 5. Primaire DNS configureren.
+    server1.vm.provision "dns-primary",
+      type: "shell",
+      path: "scripts/server1/configure-dns-server1.ps1"
+
   end
 
-
-
-  # Server 2
+  # ==================================================================
+  # Server 2 — Secundaire DNS, geen domeincontroller
+  # ==================================================================
   config.vm.define "server2" do |server2|
+
     server2.vm.box = "gusztavvargadr/windows-server-2025-standard-core"
     server2.vm.box_version = "2607.0.0"
-    server2.vm.network "private_network", ip: "192.168.25.20", auto_config: false
+
+    server2.vm.network "private_network",
+      ip: "192.168.25.20",
+      auto_config: false
+
     server2.vm.hostname = "server2"
+
     server2.vm.provider "virtualbox" do |vb|
       vb.name = "server2"
       vb.customize ["modifyvm", :id, "--groups", "/WS2"]
       vb.memory = "2048"
       vb.cpus = "2"
     end
-    # Configure the Host-Only network interface (192.168.26.20)
-    server2.vm.provision "shell", path: "scripts/configure-network.ps1", args: "-IPAddress 192.168.26.20"
+
+    # 1. Host-Only IP instellen.
+    server2.vm.provision "shell",
+      path: "scripts/configure-network.ps1",
+      args: "-IPAddress 192.168.26.20"
+
+    server2.vm.provision "dns-registration",
+      type: "shell",
+      path: "scripts/configure-dns-registration.ps1",
+      args: "-Mode Server"
+
+    # 2. Secundaire DNS configureren.
+    server2.vm.provision "dns-secondary",
+      type: "shell",
+      path: "scripts/server2/03-dns-secondary.ps1",
+      args: "-PrimaryIP 192.168.26.10 -SecondaryIP 192.168.26.20 -DomainName WS26-JD.hogent"
+
   end
 
-
-
-  # Server 3
+  # ==================================================================
+  # Server 3 — Later Certification Authority en DHCP
+  # ==================================================================
   config.vm.define "server3" do |server3|
+
     server3.vm.box = "gusztavvargadr/windows-server-2025-standard-core"
     server3.vm.box_version = "2607.0.0"
-    server3.vm.network "private_network", ip: "192.168.25.30", auto_config: false
+
+    server3.vm.network "private_network",
+      ip: "192.168.25.30",
+      auto_config: false
+
     server3.vm.hostname = "server3"
+
     server3.vm.provider "virtualbox" do |vb|
       vb.name = "server3"
       vb.customize ["modifyvm", :id, "--groups", "/WS2"]
       vb.memory = "2048"
       vb.cpus = "2"
     end
-    # Configure the Host-Only network interface (192.168.26.30)
-    server3.vm.provision "shell", path: "scripts/configure-network.ps1", args: "-IPAddress 192.168.26.30"
+
+    # Host-Only IP instellen.
+    server3.vm.provision "shell",
+      path: "scripts/configure-network.ps1",
+      args: "-IPAddress 192.168.26.30"
+
+    server3.vm.provision "dns-registration",
+      type: "shell",
+      path: "scripts/configure-dns-registration.ps1",
+      args: "-Mode Server"
   end
 
-
-
-  # Client
+  # ==================================================================
+  # Client — Windows 11 Enterprise, later RSAT en domain join
+  # ==================================================================
   config.vm.define "client" do |client|
+
     client.vm.box = "gusztavvargadr/windows-11-25h2-enterprise"
     client.vm.box_version = "2607.1.0"
-    client.vm.network "private_network", ip: "192.168.25.40", auto_config: false
+
+    client.vm.network "private_network",
+      ip: "192.168.25.40",
+      auto_config: false
+
     client.vm.hostname = "client"
+
     client.vm.provider "virtualbox" do |vb|
       vb.name = "client"
       vb.customize ["modifyvm", :id, "--groups", "/WS2"]
       vb.memory = "2048"
       vb.cpus = "2"
     end
-    # Client gets its IP dynamically via DHCP (see server3) - no provisioning script needed here
+
+    # DNS-registratie uitschakelen op beide clientinterfaces.
+    client.vm.provision "dns-registration",
+      type: "shell",
+      path: "scripts/configure-dns-registration.ps1",
+      args: "-Mode Client"
+
+    # De Host-Only interface krijgt later een adres via Windows DHCP.
+    # DHCP-clientconfiguratie, RSAT en domain join zijn nog toe te voegen.
+
   end
-
-
-
-  # Is Hyper-V volledig uitgeschakeld, maar krijg je nog steeds timeouts bij uitrollen van de client?
-  # Dan kan je eventueel de timeout aanpassen in onderstaande regel. De standaard timeout is 300 seconden (5 minuten), maar is nu al aangepast naar 600 seconden (10 minuten).
-  config.vm.boot_timeout = 600
 end

@@ -66,3 +66,14 @@ Handig als basis voor de reflectie in de deployment guide.
     output, bevestigd correct.
 - **Status Week 2 (deel 2/2):** server1 promoveren tot DC, functional levels, OU-structuur +
   gebruikers, en check van de definitieve opdrachtversie — alle vier volledig afgerond.
+
+### 2026-10-20 — DNS-automatisatie en herhaalbaarheid
+- Primaire DNS-script uitgebreid met DNS-firewallregels en NS-/transferinstellingen
+  voor de forward-, reverse- en _msdcs-zone.
+- Parameterconflict in het firewallblok opgelost: bij Set-NetFirewallRule
+  NewDisplayName gebruiken in plaats van DisplayName naast de selectie via Name.
+- dns-primary en dns-secondary na de correctie elk tweemaal succesvol uitgevoerd.
+- Na herprovisioning op server2 bevestigd dat alle drie labzones Secondary zijn.
+- A- en PTR-records van server1, server2 en server3 blijven correct aanwezig.
+- Geen NAT-IP aanwezig in de gecontroleerde A-records van de domeinzone.
+- DNS-configuratie en herhaalde provisioning op de bestaande omgeving geverifieerd.

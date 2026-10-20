@@ -34,10 +34,10 @@
 
 - [x] Primaire DNS-rol op server1, forward + reverse lookup zone
 - [x] A-records en PTR-records voor de 3 servers (enkel host-only IP, niet NAT!)
-- [ ] server2 instellen als secundaire DNS-server
-- [ ] Zone transfers testen (tijdelijk CNAME-record aanmaken op primaire DNS en verificeren op secundaire)
-- [ ] Voorkomen dat client en NAT-interfaces zichzelf registreren in DNS
-- [ ] Alles scripten in herbruikbare PowerShell-scripts (niet manueel herhalen!)
+- [x] server2 instellen als secundaire DNS-server
+- [x] Zone transfers testen (tijdelijk CNAME-record aanmaken op primaire DNS en verificeren op secundaire)
+- [x] Voorkomen dat client en NAT-interfaces zichzelf registreren in DNS
+- [x] Alles scripten in herbruikbare PowerShell-scripts (niet manueel herhalen!)
 
 ## Week 4 — 19/10 t/m 25/10: DHCP & Certification Authority
 
