@@ -336,6 +336,32 @@ Write-Output "Web Enrollment-installatie en configuratie voltooid."
 # 10. HTTPS-certificaat voor Web Enrollment aanvragen.
 # ------------------------------------------------------------------
 
+# ------------------------------------------------------------------
+# 9b. ActiveDirectory PowerShell-module installeren.
+#     Deze is nodig om het Enroll-recht op het WebServer-sjabloon
+#     te kunnen instellen.
+# ------------------------------------------------------------------
+
+
+if (-not (Get-WindowsFeature -Name RSAT-AD-PowerShell).Installed) {
+    Write-Output "RSAT ActiveDirectory PowerShell-module installeren..."
+
+    $AdModuleResult = Install-WindowsFeature `
+        -Name RSAT-AD-PowerShell `
+        -ErrorAction Stop
+
+    if (-not $AdModuleResult.Success) {
+        throw "Installatie van RSAT-AD-PowerShell is mislukt."
+    }
+
+    if ($AdModuleResult.RestartNeeded -eq "Yes") {
+        throw "Herstart server3 en voer deze provisioner daarna opnieuw uit."
+    }
+}
+else {
+    Write-Output "RSAT ActiveDirectory PowerShell-module is al geinstalleerd."
+}
+
 Import-Module PKI
 Import-Module WebAdministration
 
@@ -390,6 +416,251 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# ------------------------------------------------------------------
+# 12a. WebServer-certificaatsjabloon publiceren op de CA.
+# ------------------------------------------------------------------
+
+Import-Module AdcsAdministration
+
+$TemplateName = "WebServer"
+
+try {
+    $PublishedTemplate = Get-CATemplate |
+        Where-Object Name -eq $TemplateName
+
+
+    if (-not $PublishedTemplate) {
+        Write-Output "Certificaatsjabloon '$TemplateName' publiceren op de CA..."
+
+
+        Add-CATemplate `
+            -Name $TemplateName `
+            -Force `
+            -ErrorAction Stop
+
+
+        Write-Output "Certificaatsjabloon '$TemplateName' gepubliceerd."
+    }
+    else {
+        Write-Output "Certificaatsjabloon '$TemplateName' is al gepubliceerd."
+    }
+}
+catch {
+    @{
+        Stage    = "WebServerTemplatePublish"
+        Identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+        Error    = ($_ | Out-String)
+        Fqdn     = $Fqdn
+    } |
+        ConvertTo-Json -Depth 5 |
+        Set-Content `
+            -Path "C:\ProgramData\WS2-WebCertificate-publish-error.json" `
+            -Encoding UTF8
+
+
+    @{
+        Success  = $false
+        Identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+        Error    = "Publicatiefout op WebServer-sjabloon: $($_ | Out-String)"
+    } |
+        ConvertTo-Json -Depth 5 |
+        Set-Content -Path $ResultPath -Encoding UTF8
+
+
+    exit 1
+}
+
+# ------------------------------------------------------------------
+# 12b. Enroll-recht op WebServer-sjabloon idempotent instellen.
+# ------------------------------------------------------------------
+
+
+try {
+
+Import-Module ActiveDirectory
+
+
+$EnrollRightGuid = [guid]"0e10c968-78fb-11d2-90d4-00c04f79dc55"
+
+
+$DomainParts = ($Fqdn -split "\.") | Select-Object -Skip 1
+$DomainDN = ($DomainParts | ForEach-Object { "DC=$_" }) -join ","
+
+
+$TemplateDN =
+    "CN=$TemplateName," +
+    "CN=Certificate Templates," +
+    "CN=Public Key Services," +
+    "CN=Services," +
+    "CN=Configuration," +
+    $DomainDN
+
+
+$Template = Get-ADObject `
+    -Identity $TemplateDN `
+    -Properties nTSecurityDescriptor `
+    -ErrorAction Stop
+
+
+$TemplateAcl = $Template.nTSecurityDescriptor
+
+
+$DomainNetbiosName = $DomainParts | Select-Object -First 1
+
+
+$DomainAdminsIdentity =
+    New-Object System.Security.Principal.NTAccount(
+        $DomainNetbiosName,
+        "Domain Admins"
+    )
+
+
+$EnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule(
+    $DomainAdminsIdentity,
+    [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight,
+    [System.Security.AccessControl.AccessControlType]::Allow,
+    $EnrollRightGuid,
+    [System.DirectoryServices.ActiveDirectorySecurityInheritance]::All
+)
+
+Write-Output "Effectieve groepen van de taakidentiteit:"
+
+& whoami.exe /groups |
+    Out-String -Width 200 |
+    Write-Output
+
+Write-Output "ACL-regels voor Domain Admins op $TemplateName :"
+
+$TemplateAcl.Access |
+    Where-Object {
+        $_.IdentityReference -like "*Domain Admins*"
+    } |
+    Format-List `
+        IdentityReference,
+        ActiveDirectoryRights,
+        ObjectType,
+        AccessControlType,
+        IsInherited |
+    Out-String -Width 200 |
+    Write-Output
+
+$HasEnrollRight = $TemplateAcl.Access |
+    Where-Object {
+        $_.IdentityReference -eq $DomainAdminsIdentity -and
+        $_.ObjectType -eq $EnrollRightGuid -and
+        $_.AccessControlType -eq
+            [System.Security.AccessControl.AccessControlType]::Allow
+    }
+
+# Authenticated Users ook expliciet Enroll geven op het sjabloon.
+# Dit is consistent met de CA-security, waar Authenticated Users
+# al Enroll hebben op de CA zelf.
+
+$AuthenticatedUsersIdentity =
+    New-Object System.Security.Principal.SecurityIdentifier("S-1-5-11")
+
+$AuthenticatedUsersRule =
+    New-Object System.DirectoryServices.ActiveDirectoryAccessRule(
+        $AuthenticatedUsersIdentity,
+        [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight,
+        [System.Security.AccessControl.AccessControlType]::Allow,
+        $EnrollRightGuid,
+        [System.DirectoryServices.ActiveDirectorySecurityInheritance]::All
+    )
+
+$HasAuthenticatedUsersEnroll = $TemplateAcl.Access |
+    Where-Object {
+        $_.IdentityReference -eq $AuthenticatedUsersIdentity -and
+        $_.ObjectType -eq $EnrollRightGuid -and
+        $_.AccessControlType -eq
+            [System.Security.AccessControl.AccessControlType]::Allow
+    }
+
+if (-not $HasAuthenticatedUsersEnroll) {
+    Write-Output "Enroll-recht voor Authenticated Users toevoegen aan $TemplateName..."
+
+    $TemplateAcl.AddAccessRule($AuthenticatedUsersRule)
+
+    Set-ADObject `
+        -Identity $TemplateDN `
+        -Replace @{ nTSecurityDescriptor = $TemplateAcl } `
+        -ErrorAction Stop
+
+    Write-Output "Enroll-recht voor Authenticated Users toegevoegd."
+}
+else {
+    Write-Output "Enroll-recht voor Authenticated Users is al aanwezig."
+}
+
+
+if (-not $HasEnrollRight) {
+    Write-Output "Enroll-recht voor Domain Admins toevoegen aan $TemplateName..."
+
+
+    $TemplateAcl.AddAccessRule($EnrollRule)
+
+
+    Set-ADObject `
+        -Identity $TemplateDN `
+        -Replace @{ nTSecurityDescriptor = $TemplateAcl } `
+        -ErrorAction Stop
+
+
+    Write-Output "Enroll-recht toegevoegd."
+}
+else {
+    Write-Output "Enroll-recht voor Domain Admins is al aanwezig."
+}
+}
+catch {
+    Write-Output "ACL-fout op WebServer-sjabloon:"
+    Write-Output ($_ | Out-String)
+
+    @{
+        Stage    = "WebServerTemplateAcl"
+        Identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+        Error    = ($_ | Out-String)
+        Fqdn     = $Fqdn
+    } |
+        ConvertTo-Json -Depth 5 |
+        Set-Content `
+            -Path "C:\ProgramData\WS2-WebCertificate-acl-error.json" `
+            -Encoding UTF8
+
+    @{
+        Success  = $false
+        Identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+        Error    = "ACL-fout op WebServer-sjabloon: $($_ | Out-String)"
+    } |
+        ConvertTo-Json -Depth 5 |
+        Set-Content -Path $ResultPath -Encoding UTF8
+
+    exit 1
+}
+
+$Diagnostics = [ordered]@{}
+
+$Diagnostics.Identity =
+    [Security.Principal.WindowsIdentity]::GetCurrent().Name
+
+try {
+    $Diagnostics.CaTemplates =
+        (certutil -CATemplates 2>&1 | Out-String)
+
+    $Diagnostics.PublishedTemplate =
+        (Get-CATemplate |
+            Where-Object Name -eq $TemplateName |
+            Format-List * |
+            Out-String)
+
+    $Diagnostics.CaConfig =
+        (certutil -getconfig 2>&1 | Out-String)
+}
+catch {
+    $Diagnostics.DiagnosticError = ($_ | Out-String)
+}
+
+
 try {
     Import-Module PKI
 
@@ -419,11 +690,22 @@ try {
     exit 0
 }
 catch {
-    @{
-        Success = $false
-        Error   = ($_ | Out-String)
-    } |
-        ConvertTo-Json |
+    $ErrorReport = @{
+        Success     = $false
+        Identity    = $Diagnostics.Identity
+        Error       = ($_ | Out-String)
+        Diagnostics = $Diagnostics
+    }
+
+    # Permanent diagnoserapport: blijft bestaan na het opkuisen van de werkmap.
+    $ErrorReport |
+        ConvertTo-Json -Depth 5 |
+        Set-Content `
+            -Path "C:\ProgramData\WS2-WebCertificate-last-error.json" `
+            -Encoding UTF8
+
+    $ErrorReport |
+        ConvertTo-Json -Depth 5 |
         Set-Content -Path $ResultPath -Encoding UTF8
 
     exit 1
@@ -438,11 +720,14 @@ catch {
     $PowerShellPath =
         "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
 
+$LogPath = "C:\ProgramData\WS2-WebCertificate-task.log"
+
     $TaskArguments =
         '-NoProfile -NonInteractive -ExecutionPolicy Bypass ' +
-        "-File `"$HelperPath`" " +
-        "-Fqdn `"$WebFqdn`" " +
-        "-ResultPath `"$ResultPath`""
+        "-Command `"& { & '$HelperPath' " +
+        "-Fqdn '$WebFqdn' " +
+        "-ResultPath '$ResultPath' " +
+        "} *> '$LogPath'`""
 
     $Action = New-ScheduledTaskAction `
         -Execute $PowerShellPath `

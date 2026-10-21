@@ -44,6 +44,14 @@ Vagrant.configure("2") do |config|
   domain_name = "WS26-JD.hogent"
   domain_netbios_name = "WS26-JD"
 
+  # Voorkom dat vagrant-vbguest Guest Additions probeert bij te werken.
+  # De Guest Additions in de box (7.2.14) werken correct voor dit lab.
+  if Vagrant.has_plugin?("vagrant-vbguest")
+    config.vbguest.auto_update = false
+    config.vbguest.no_install = true
+    config.vbguest.no_remote  = true
+  end
+
   # DSRM-herstelwachtwoord van de domeincontroller.
   dsrm_password = "JouwSterkWachtwoord123!"
 
@@ -157,11 +165,17 @@ Vagrant.configure("2") do |config|
       run: "never"
 
     server1.vm.provision "server1-verify-web-enrollment",
-      type: "shell",
-      path: "scripts/server1/04-verify-web-enrollment.ps1",
-      env: {
-        "WS26_ADMIN_PASSWORD" => "JouwSterkWachtwoord123!"
-      }
+    type: "shell",
+    run: "never",
+    path: "scripts/server1/04-verify-web-enrollment.ps1",
+    env: {
+      "WS26_ADMIN_PASSWORD" => "JouwSterkWachtwoord123!"
+    }
+
+    server1.vm.provision "server1-trust-root-ca",
+    type: "shell",
+    run: "never",
+    path: "scripts/server1/05-trust-root-ca.ps1"
   end
 
   # ==================================================================
@@ -289,6 +303,10 @@ Vagrant.configure("2") do |config|
 
     # Firewallconfiguratie via 05-firewall.ps1 is nog toe te voegen.
 
+    server3.vm.provision "server3-publish-root-ca",
+      type: "shell",
+      run: "never",
+      path: "scripts/server3/06-publish-root-ca.ps1"
   end
 
   # ==================================================================

@@ -51,6 +51,11 @@ $Credential = [System.Management.Automation.PSCredential]::new(
     $SecurePassword
 )
 
+# Interne DNS-servers instellen vóór de domeinjoin.
+Set-DnsClientServerAddress `
+    -InterfaceAlias "Ethernet 2" `
+    -ServerAddresses "192.168.26.10", "192.168.26.20"
+
 Write-Output "Server3 toevoegen aan domein $DomainName..."
 
 $Result = Add-Computer `
