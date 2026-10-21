@@ -41,12 +41,12 @@
 
 ## Week 4 — 19/10 t/m 25/10: DHCP & Certification Authority
 
-- [ ] DHCP-rol installeren op server3
-- [ ] Scope instellen: 192.168.26.100–200 (151–200 nog niet gebruiken)
-- [ ] Relevante DHCP-opties instellen (nadenken welke zinvol zijn, niet zomaar Windows Server I overnemen)
-- [ ] Certification Authority installeren op server3
-- [ ] GPO maken zodat CA automatisch vertrouwd wordt door alle domeinleden
-- [ ] Web Enrollment Role Service testen via `http://FQDN/CertSrv`
+- [x] DHCP-rol installeren op server3
+- [x] Scope instellen: 192.168.26.100–200 (151–200 nog niet gebruiken)
+- [x] Relevante DHCP-opties instellen (nadenken welke zinvol zijn, niet zomaar Windows Server I overnemen)(Optie 6 vertelt de client welke DNS-servers hij moet gebruiken. Je opdracht voorziet twee interne DNS-servers, dus beide adressen horen in de configuratie voor de client.)(Jouw DNS-domeinnaam, Dit is het DNS-suffix/zoekdomein voor de verbinding. De cursus vermeldt dat dit typisch het rootdomein van Active Directory is. Het instellen van deze optie is niet hetzelfde als de client aan het domein toevoegen; de domeinjoin blijft een aparte stap.)
+- [x] Certification Authority installeren op server3
+- [x] GPO maken zodat CA automatisch vertrouwd wordt door alle domeinleden
+- [x] Web Enrollment Role Service testen via `http://FQDN/CertSrv`
 
 ## Week 5 — 26/10 t/m 01/11: IIS, Management Tools & Firewall
 

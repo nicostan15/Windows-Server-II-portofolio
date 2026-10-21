@@ -15,6 +15,9 @@
 # De IP-adressen in private_network zijn placeholders.
 # De echte Host-Only IP-configuratie gebeurt via PowerShell.
 #
+# Labcredentials staan bewust in deze configuratie.
+# Gebruik deze wachtwoorden nergens buiten deze labomgeving.
+#
 # Alle VM's starten:
 #   vagrant up
 #
@@ -23,8 +26,32 @@
 #
 # Alleen secundaire DNS opnieuw configureren:
 #   vagrant provision server2 --provision-with dns-secondary
+#
+# Alleen server3 aan het domein toevoegen/controleren:
+#   vagrant provision server3 --provision-with server3-domain
+#
+# Alleen de CA-rol op server3 installeren/controleren:
+#   vagrant provision server3 --provision-with server3-ca
+#
+# Alleen DHCP op server3 installeren/configureren:
+#   vagrant provision server3 --provision-with server3-dhcp
 
 Vagrant.configure("2") do |config|
+
+  # ------------------------------------------------------------------
+  # Labconfiguratie.
+  # ------------------------------------------------------------------
+  domain_name = "WS26-JD.hogent"
+  domain_netbios_name = "WS26-JD"
+
+  # DSRM-herstelwachtwoord van de domeincontroller.
+  dsrm_password = "JouwSterkWachtwoord123!"
+
+  # Domeinaccount voor de server3-domeinjoin.
+  # Dit is een ander credentialdoel dan het DSRM-wachtwoord.
+  # Controleer dat deze waarde daadwerkelijk bij Administrator hoort.
+  domain_admin_user = "#{domain_netbios_name}\\Administrator"
+  domain_admin_password = "JouwSterkWachtwoord123!"
 
   # ------------------------------------------------------------------
   # WinRM-workaround voor de huidige labomgeving na AD-promotie.
@@ -64,33 +91,77 @@ Vagrant.configure("2") do |config|
       path: "scripts/configure-network.ps1",
       args: "-IPAddress 192.168.26.10"
 
+    # 2. DNS-registratie configureren.
     server1.vm.provision "dns-registration",
       type: "shell",
       path: "scripts/configure-dns-registration.ps1",
       args: "-Mode Server"
 
-    # 2. Domeincontroller-promotie.
+    # 3. Domeincontroller-promotie.
     # Let op: reboot: true kan ook bij herprovisioning herstarten,
     # zelfs wanneer het script de promotie zelf overslaat.
     server1.vm.provision "shell",
       path: "scripts/server1/promote-dc.ps1",
-      args: "-DomainName WS26-JD.hogent -DomainNetbiosName WS26-JD -SafeModePassword JouwSterkWachtwoord123!",
+      args: [
+        "-DomainName", domain_name,
+        "-DomainNetbiosName", domain_netbios_name,
+        "-SafeModePassword", dsrm_password
+      ],
       reboot: true
 
-    # 3. Bevestigen dat WinRM na de reboot opnieuw bereikbaar is.
+    # 4. Bevestigen dat WinRM na de reboot opnieuw bereikbaar is.
     server1.vm.provision "shell",
       inline: "Write-Output 'server1 is terug online na domain controller promotie.'"
 
-    # 4. OU-structuur en gebruikers aanmaken.
+    # Domein-Administratorwachtwoord expliciet instellen voor het lab.
+    server1.vm.provision "domain-admin",
+      type: "shell",
+      path: "scripts/server1/configure-domain-admin.ps1",
+      args: [
+        "-DomainAdminPassword", domain_admin_password
+      ],
+      privileged: true
+
+    # 5. OU-structuur en gebruikers aanmaken.
     server1.vm.provision "ad-users",
       type: "shell",
       path: "scripts/server1/create-ous-users.ps1"
 
-    # 5. Primaire DNS configureren.
+    # Templatepermissies configureren nadat server3 domeinlid is.
+    server1.vm.provision "webserver-template",
+      type: "shell",
+      path: "scripts/server1/configure-webserver-template.ps1",
+      args: [
+        "-DomainAdminUser", domain_admin_user,
+        "-DomainAdminPassword", domain_admin_password
+      ],
+      privileged: true,
+      run: "never"
+
+    # 6. Primaire DNS configureren.
     server1.vm.provision "dns-primary",
       type: "shell",
       path: "scripts/server1/configure-dns-server1.ps1"
 
+    # CA-vertrouwen via GPO.
+    # Expliciet uitvoeren nadat server3-ca succesvol afgerond is.
+    server1.vm.provision "ca-trust-gpo",
+      type: "shell",
+      path: "scripts/server1/configure-ca-trust-gpo.ps1",
+      args: [
+        "-DomainName", domain_name,
+        "-CAConfig", "server3.#{domain_name}\\WS26-JD-Root-CA",
+        "-CACommonName", "WS26-JD-Root-CA"
+      ],
+      privileged: true,
+      run: "never"
+
+    server1.vm.provision "server1-verify-web-enrollment",
+      type: "shell",
+      path: "scripts/server1/04-verify-web-enrollment.ps1",
+      env: {
+        "WS26_ADMIN_PASSWORD" => "JouwSterkWachtwoord123!"
+      }
   end
 
   # ==================================================================
@@ -119,21 +190,28 @@ Vagrant.configure("2") do |config|
       path: "scripts/configure-network.ps1",
       args: "-IPAddress 192.168.26.20"
 
+    # 2. DNS-registratie configureren.
     server2.vm.provision "dns-registration",
       type: "shell",
       path: "scripts/configure-dns-registration.ps1",
       args: "-Mode Server"
 
-    # 2. Secundaire DNS configureren.
+    # 3. Secundaire DNS configureren.
     server2.vm.provision "dns-secondary",
       type: "shell",
       path: "scripts/server2/03-dns-secondary.ps1",
-      args: "-PrimaryIP 192.168.26.10 -SecondaryIP 192.168.26.20 -DomainName WS26-JD.hogent"
+      args: [
+        "-PrimaryIP", "192.168.26.10",
+        "-SecondaryIP", "192.168.26.20",
+        "-DomainName", domain_name
+      ]
+
+    # Domeinjoin en firewallconfiguratie zijn nog toe te voegen.
 
   end
 
   # ==================================================================
-  # Server 3 — Later Certification Authority en DHCP
+  # Server 3 — Certification Authority en DHCP
   # ==================================================================
   config.vm.define "server3" do |server3|
 
@@ -153,19 +231,68 @@ Vagrant.configure("2") do |config|
       vb.cpus = "2"
     end
 
-    # Host-Only IP instellen.
+    # 1. Host-Only IP instellen.
     server3.vm.provision "shell",
       path: "scripts/configure-network.ps1",
       args: "-IPAddress 192.168.26.30"
 
+    # 2. DNS-registratie configureren.
     server3.vm.provision "dns-registration",
       type: "shell",
       path: "scripts/configure-dns-registration.ps1",
       args: "-Mode Server"
+
+    # 3. Domeinjoin uitvoeren/controleren en daarna herstarten.
+    # Server1, DNS en de Servers-OU moeten vooraf beschikbaar zijn.
+    # Het script slaat de join over als server3 al domeinlid is.
+    # reboot: true herstart ook wanneer het script de join overslaat.
+    server3.vm.provision "server3-domain",
+      type: "shell",
+      path: "scripts/server3/02-join-domain.ps1",
+      args: [
+        "-DomainName", domain_name,
+        "-OUPath", "OU=Servers,DC=WS26-JD,DC=hogent",
+        "-DomainAdminUser", domain_admin_user,
+        "-DomainAdminPassword", domain_admin_password
+      ],
+      privileged: true,
+      reboot: true
+
+    # 4. Certification Authority-rol installeren/controleren.
+    # Het huidige script installeert alleen de CA-rol.
+    # Enterprise Root CA installeren en configureren.
+    server3.vm.provision "server3-ca",
+      type: "shell",
+      path: "scripts/server3/03-ca.ps1",
+      args: [
+        "-DomainName", domain_name,
+        "-DomainAdminUser", domain_admin_user,
+        "-DomainAdminPassword", domain_admin_password,
+        "-CACommonName", "WS26-JD-Root-CA"
+      ],
+      privileged: true
+
+    # 5. DHCP installeren en configureren.
+    # Het huidige script configureert:
+    # - DHCP-serverrol en beheertools
+    # - Scope 192.168.26.100 t/m 192.168.26.200
+    # - Exclusion 192.168.26.151 t/m 192.168.26.200
+    # - Optie 6: 192.168.26.10 en 192.168.26.20
+    # - Optie 15: WS26-JD.hogent
+    #
+    # Geen routeroptie voor het interne Host-Only-netwerk.
+    # AD-autorisatie en netwerkbindings zijn nog toe te voegen.
+    server3.vm.provision "server3-dhcp",
+      type: "shell",
+      path: "scripts/server3/04-dhcp.ps1",
+      privileged: true
+
+    # Firewallconfiguratie via 05-firewall.ps1 is nog toe te voegen.
+
   end
 
   # ==================================================================
-  # Client — Windows 11 Enterprise, later RSAT en domain join
+  # Client — Windows 11 Enterprise, later RSAT en domeinjoin
   # ==================================================================
   config.vm.define "client" do |client|
 
@@ -191,8 +318,9 @@ Vagrant.configure("2") do |config|
       path: "scripts/configure-dns-registration.ps1",
       args: "-Mode Client"
 
-    # De Host-Only interface krijgt later een adres via Windows DHCP.
-    # DHCP-clientconfiguratie, RSAT en domain join zijn nog toe te voegen.
+    # De Host-Only-interface moet een adres via Windows DHCP krijgen.
+    # DHCP-clientconfiguratie, RSAT en domeinjoin zijn nog toe te voegen.
 
   end
+
 end
