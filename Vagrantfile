@@ -151,6 +151,14 @@ Vagrant.configure("2") do |config|
       type: "shell",
       path: "scripts/server1/configure-dns-server1.ps1"
 
+    server1.vm.provision "server1-iis",
+      type: "shell",
+      path: "scripts/server1/06-iis.ps1",
+      args: [
+        "-DomainName", domain_name
+      ],
+      privileged: true
+
     # CA-vertrouwen via GPO.
     # Expliciet uitvoeren nadat server3-ca succesvol afgerond is.
     server1.vm.provision "ca-trust-gpo",

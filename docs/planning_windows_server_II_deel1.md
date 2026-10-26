@@ -50,7 +50,7 @@
 
 ## Week 5 — 26/10 t/m 01/11: IIS, Management Tools & Firewall
 
-- [ ] IIS installeren op server1, statische "Hello World"-pagina op poort 80
+- [x] IIS installeren op server1, statische "Hello World"-pagina op poort 80
 - [ ] DNS-record voor `http://intranet.$jouw-domein` toevoegen en testen
 - [ ] RSAT-tools automatisch installeren op de Windows 11 client (enkel wat nodig is voor de demo)
 - [ ] Firewallregels per server scripten (enkel noodzakelijk inkomend verkeer toelaten + correcte default policy)
