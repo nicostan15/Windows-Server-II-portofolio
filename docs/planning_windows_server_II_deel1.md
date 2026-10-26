@@ -52,7 +52,7 @@
 
 - [x] IIS installeren op server1, statische "Hello World"-pagina op poort 80
 - [x] DNS-record voor `http://intranet.$jouw-domein` toevoegen en testen
-- [ ] RSAT-tools automatisch installeren op de Windows 11 client (enkel wat nodig is voor de demo)
+- [x] RSAT-tools automatisch installeren op de Windows 11 client (enkel wat nodig is voor de demo)
 - [ ] Firewallregels per server scripten (enkel noodzakelijk inkomend verkeer toelaten + correcte default policy)
 - [ ] Testen of `vagrant ssh` werkt zonder firewall volledig uit te schakelen in de finale scripts
 

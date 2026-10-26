@@ -344,6 +344,11 @@ Vagrant.configure("2") do |config|
       path: "scripts/configure-dns-registration.ps1",
       args: "-Mode Client"
 
+    client.vm.provision "client-rsat",
+      type: "shell",
+      path: "scripts/client/02-install-rsat.ps1",
+      privileged: true
+
     # De Host-Only-interface moet een adres via Windows DHCP krijgen.
     # DHCP-clientconfiguratie, RSAT en domeinjoin zijn nog toe te voegen.
 
