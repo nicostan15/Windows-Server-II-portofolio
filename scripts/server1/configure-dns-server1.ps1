@@ -14,6 +14,8 @@
     - Controleert A- en PTR-records onafhankelijk.
     - Configureert gerichte DNS-firewallregels.
     - Configureert NS-records, zone transfers en notify voor server2.
+    - Maakt het intranet-A-record aan indien nodig.
+    - Controleert bestaande intranetrecords op conflicten.
 
     Netwerk: 192.168.26.0/24.
 #>
@@ -375,6 +377,48 @@ foreach ($ZoneName in $TransferZones) {
         -NotifyServers $Server2IP
 
     Write-Host "Zone transfer en notify ingesteld: $ZoneName -> $Server2IP"
+}
+
+# ------------------------------------------------------------------
+# 9. Maak het intranet-A-record aan of controleer het bestaande record.
+# ------------------------------------------------------------------
+$IntranetName = "intranet"
+$IntranetFqdn = "$IntranetName.$ForwardZone"
+
+$ExistingIntranetRecords = @(
+    Get-DnsServerResourceRecord -ZoneName $ForwardZone `
+        -ErrorAction Stop |
+        Where-Object { $_.HostName -ieq $IntranetName }
+)
+
+$ExistingIntranetARecords = @(
+    $ExistingIntranetRecords |
+        Where-Object { $_.RecordType -eq "A" }
+)
+
+$ConflictingIntranetRecords = @(
+    $ExistingIntranetRecords |
+        Where-Object { $_.RecordType -in @("CNAME", "AAAA") }
+)
+
+if ($ConflictingIntranetRecords.Count -gt 0) {
+    throw "Er bestaat al een CNAME- of AAAA-record voor $IntranetFqdn. Controleer dit eerst."
+}
+
+if ($ExistingIntranetARecords.Count -eq 0) {
+    Add-DnsServerResourceRecordA -ZoneName $ForwardZone `
+        -Name $IntranetName `
+        -IPv4Address $Server1IP `
+        -ErrorAction Stop
+
+    Write-Host "Intranetrecord aangemaakt: $IntranetFqdn -> $Server1IP"
+} elseif (
+    $ExistingIntranetARecords.Count -ne 1 -or
+    $ExistingIntranetARecords[0].RecordData.IPv4Address.IPAddressToString -ne $Server1IP
+) {
+    throw "Het bestaande A-record voor $IntranetFqdn wijkt af van $Server1IP. Controleer dit eerst."
+} else {
+    Write-Host "Intranetrecord correct: $IntranetFqdn -> $Server1IP"
 }
 
 Write-Host "`nPrimaire DNS-configuratie voltooid." -ForegroundColor Green
