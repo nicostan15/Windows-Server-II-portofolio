@@ -63,6 +63,8 @@
 ## Week 6 — 02/11 t/m 08/11: Automatiseren, testen & afwerken scripts
 
 - [ ] Volledige omgeving vanaf nul opnieuw uitrollen met je scripts (test herhaalbaarheid!)
+- [ ] Scripts namen regelen, consitente benaming.
+- [ ] Scripts inhoud onnodige zaken weglaten
 - [ ] Waar mogelijk: scripts laten uitvoeren via Vagrant/Packer i.p.v. manueel (nice-to-have, geen must)
 - [ ] Alle scripts opkuisen, herbruikbaar maken (gebruikers/OU's makkelijk aanpasbaar)
 - [ ] Bugs/edge cases oplossen (bv. shared folder niet beschikbaar na domain join → scripts lokaal kopiëren)
