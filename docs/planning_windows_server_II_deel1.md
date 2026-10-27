@@ -53,7 +53,11 @@
 - [x] IIS installeren op server1, statische "Hello World"-pagina op poort 80
 - [x] DNS-record voor `http://intranet.$jouw-domein` toevoegen en testen
 - [x] RSAT-tools automatisch installeren op de Windows 11 client (enkel wat nodig is voor de demo)
-- [ ] Firewallregels per server scripten (enkel noodzakelijk inkomend verkeer toelaten + correcte default policy)
+- [x] Firewallregels per server scripten (enkel noodzakelijk inkomend verkeer toelaten + correcte default policy)
+  - [x] Firewall ingeschakeld en correcte default policy toegepast
+  - [x] Eerste aanscherping per server uitgevoerd en functioneel getest
+  - [x] Overblijvende uitzonderingen en beheerregels minimaliseren
+  - [x] Firewallconfiguratie automatisch in de normale provisioning toepassen
 - [ ] Testen of `vagrant ssh` werkt zonder firewall volledig uit te schakelen in de finale scripts
 
 ## Week 6 — 02/11 t/m 08/11: Automatiseren, testen & afwerken scripts

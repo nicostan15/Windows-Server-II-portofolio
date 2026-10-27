@@ -60,6 +60,8 @@ Vagrant.configure("2") do |config|
   # Controleer dat deze waarde daadwerkelijk bij Administrator hoort.
   domain_admin_user = "#{domain_netbios_name}\\Administrator"
   domain_admin_password = "JouwSterkWachtwoord123!"
+  # ssh -l "WS26-JD\Administrator" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o PasswordAuthentication=yes 192.168.26.30
+  # ssh -p 2222 -l "WS26-JD\Administrator" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o PasswordAuthentication=yes 127.0.0.1
 
   # ------------------------------------------------------------------
   # WinRM-workaround voor de huidige labomgeving na AD-promotie.
@@ -184,6 +186,14 @@ Vagrant.configure("2") do |config|
     type: "shell",
     run: "never",
     path: "scripts/server1/05-trust-root-ca.ps1"
+
+        # Firewall: voorlopig alleen expliciet uitvoeren.
+    server1.vm.provision "server1-firewall",
+      type: "shell",
+      path: "scripts/configure-firewall.ps1",
+      args: ["-Machine", "server1"],
+      privileged: true,
+      run: "always"
   end
 
   # ==================================================================
@@ -230,6 +240,13 @@ Vagrant.configure("2") do |config|
 
     # Domeinjoin en firewallconfiguratie zijn nog toe te voegen.
 
+        # Firewall: voorlopig alleen expliciet uitvoeren.
+    server2.vm.provision "server2-firewall",
+      type: "shell",
+      path: "scripts/configure-firewall.ps1",
+      args: ["-Machine", "server2"],
+      privileged: true,
+      run: "always"
   end
 
   # ==================================================================
@@ -304,17 +321,36 @@ Vagrant.configure("2") do |config|
     #
     # Geen routeroptie voor het interne Host-Only-netwerk.
     # AD-autorisatie en netwerkbindings zijn nog toe te voegen.
-    server3.vm.provision "server3-dhcp",
+        server3.vm.provision "server3-dhcp",
       type: "shell",
       path: "scripts/server3/04-dhcp.ps1",
+      args: [
+        "-DomainAdminUser", domain_admin_user,
+        "-DomainAdminPassword", domain_admin_password
+      ],
       privileged: true
 
-    # Firewallconfiguratie via 05-firewall.ps1 is nog toe te voegen.
+        # Firewall: voorlopig alleen expliciet uitvoeren.
+    server3.vm.provision "server3-firewall",
+      type: "shell",
+      path: "scripts/configure-firewall.ps1",
+      args: ["-Machine", "server3"],
+      privileged: true,
+      run: "always"
 
     server3.vm.provision "server3-publish-root-ca",
       type: "shell",
-      run: "never",
+      run: "always",
       path: "scripts/server3/06-publish-root-ca.ps1"
+
+    # Na het opstarten van server3 worden de CA-afhankelijke stappen
+    # op server1 automatisch uitgevoerd.
+    server3.trigger.after :up do |trigger|
+      trigger.name = "Configure CA-dependent settings on server1"
+      trigger.run = {
+        inline: "vagrant provision server1 --provision-with webserver-template,ca-trust-gpo,server1-verify-web-enrollment,server1-trust-root-ca"
+      }
+    end
   end
 
   # ==================================================================
@@ -350,8 +386,25 @@ Vagrant.configure("2") do |config|
       privileged: true
 
     # De Host-Only-interface moet een adres via Windows DHCP krijgen.
-    # DHCP-clientconfiguratie, RSAT en domeinjoin zijn nog toe te voegen.
+    # De Host-Only-interface ontvangt een adres via Windows DHCP.
+    # RSAT en de domeinjoin worden automatisch geconfigureerd.
+        # Firewall: voorlopig alleen expliciet uitvoeren.
+    client.vm.provision "client-firewall",
+      type: "shell",
+      path: "scripts/client/configure-client-firewall.ps1",
+      privileged: true,
+      run: "always"
 
+    client.vm.provision "client-domain",
+      type: "shell",
+      path: "scripts/client/04-join-domain.ps1",
+      privileged: true,
+      reboot: true
+
+    client.vm.provision "client-verify-ca",
+      type: "shell",
+      run: "always",
+      path: "scripts/client/03-verify-ca.ps1"
   end
 
 end
