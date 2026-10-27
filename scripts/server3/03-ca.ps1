@@ -369,15 +369,13 @@ $WebFqdn = "server3.$DomainName"
 $ServerAuthenticationOid = "1.3.6.1.5.5.7.3.1"
 
 # Een bestaand geschikt certificaat hergebruiken.
+# Een bestaand geschikt certificaat hergebruiken.
+# Een bestaand geldig webservercertificaat hergebruiken.
 $WebCertificate = Get-ChildItem Cert:\LocalMachine\My |
     Where-Object {
         $_.HasPrivateKey -and
         $_.Subject -eq "CN=$WebFqdn" -and
-        $_.NotBefore -le (Get-Date) -and
-        $_.NotAfter -gt (Get-Date).AddDays(30) -and
-        ($_.DnsNameList.Unicode -contains $WebFqdn) -and
-        ($_.EnhancedKeyUsageList.ObjectId.Value -contains
-            $ServerAuthenticationOid)
+        $_.NotAfter -gt (Get-Date).AddDays(30)
     } |
     Sort-Object NotAfter -Descending |
     Select-Object -First 1

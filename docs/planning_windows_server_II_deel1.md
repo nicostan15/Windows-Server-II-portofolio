@@ -58,7 +58,7 @@
   - [x] Eerste aanscherping per server uitgevoerd en functioneel getest
   - [x] Overblijvende uitzonderingen en beheerregels minimaliseren
   - [x] Firewallconfiguratie automatisch in de normale provisioning toepassen
-- [ ] Testen of `vagrant ssh` werkt zonder firewall volledig uit te schakelen in de finale scripts
+- [x] Testen of `vagrant ssh` werkt zonder firewall volledig uit te schakelen in de finale scripts
 
 ## Week 6 — 02/11 t/m 08/11: Automatiseren, testen & afwerken scripts
 

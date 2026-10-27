@@ -199,3 +199,97 @@ HKLM:\Software\Policies\Microsoft\SystemCertificates\Root\Certificates\9BAC7EC5C
 
 
 - **Status Week 4:** DHCP, Certification Authority, automatische CA-trust via GPO en Web Enrollment volledig afgerond.
+
+### 2026-10-26 — IIS, client-domeinjoin, firewall en volledige provisioning-automatisatie
+
+- Root-CA-publicatie in Active Directory opnieuw uitgevoerd na correctie van `scripts/server3/06-publish-root-ca.ps1`.
+- Het publicatiescript aangepast zodat de `certutil -dspublish`-opdracht via `cmd.exe` wordt uitgevoerd met een betrouwbare logomleiding.
+- Publicatie succesvol gecontroleerd:
+
+```text
+Certificate already in DS store.
+CertUtil: -dsPublish command completed successfully.
+Root-CA-certificaat is gepubliceerd in Active Directory.
+```
+
+- Webserver-certificaattemplate geconfigureerd via `webserver-template`.
+- Expliciete Enroll-rechten gecontroleerd voor de domein-Administrator en de webserver-identiteit.
+- GPO `WS26 - Vertrouw Root CA` opnieuw aangemaakt, gekoppeld aan het domein en geverifieerd.
+- Root-CA-certificaat op server1 bevestigd in `Cert:\LocalMachine\Root`:
+
+```text
+Subject: CN=WS26-JD-Root-CA, DC=WS26-JD, DC=hogent
+Thumbprint: 226C58F452BB9970BD08435929CCEF1DE44670F7
+NotAfter: 10/26/2031
+```
+
+- Web Enrollment opnieuw gecontroleerd vanaf server1:
+
+```text
+HTTP-ingang: http://server3.WS26-JD.hogent/CertSrv/
+HTTP-redirect: 302 naar [https://server3.WS26-JD.hogent/certsrv/Default.asp](https://server3.WS26-JD.hogent/certsrv/Default.asp)
+HTTPS-pagina: HTTP 200
+```
+
+- CA-bereikbaarheid getest vanaf server1:
+
+```powershell
+certutil -ping -config "server3.WS26-JD.hogent\WS26-JD-Root-CA"
+```
+
+- Resultaat bevestigd:
+
+```text
+Server "WS26-JD-Root-CA" ICertRequest2 interface is alive.
+CertUtil: -ping command completed successfully.
+```
+
+- IIS op server1 gecontroleerd: `intranet.WS26-JD.hogent` resolveert naar `192.168.26.10` en geeft HTTP `200 OK`.
+- Windows 11-client uitgebreid met RSAT via `scripts/client/02-install-rsat.ps1`.
+- Client toegevoegd aan het domein `WS26-JD.hogent` via nieuw script `scripts/client/04-join-domain.ps1`.
+- Domeinjoin geautomatiseerd in de Vagrantfile als provisioner `client-domain`, met automatische herstart.
+- Na de domeinjoin Group Policy vernieuwd en de Root-CA-trust op de client gecontroleerd.
+- Rootcertificaat bevestigd op de client in `Cert:\LocalMachine\Root`.
+- Toegang tot het intranet vanaf de client bevestigd met HTTP `200 OK`.
+- Nieuw verificatiescript gemaakt: `scripts/client/03-verify-ca.ps1`.
+- Verificatiescript toegevoegd als provisioner `client-verify-ca` met `run: "always"`.
+- Firewall op de client geconfigureerd via nieuw script `scripts/client/configure-client-firewall.ps1`.
+- Firewallprofielen Domain, Private en Public ingeschakeld met:
+
+```text
+DefaultInboundAction  : Block
+DefaultOutboundAction : Allow
+```
+
+- Enkel noodzakelijke regels ingeschakeld: Core Networking en WinRM.
+- SSH-toegang behouden via de bestaande firewallregel `OpenSSH-Server-In-TCP`.
+- `vagrant ssh` getest op server1, server2, server3 en client met actieve firewall.
+- SSH-regel op alle vier machines gecontroleerd:
+
+```text
+Name                  Enabled Direction Action
+----                  ------- --------- ------
+OpenSSH-Server-In-TCP    True   Inbound  Allow
+```
+
+- Vagrantfile aangepast voor volledige automatisering:
+  - `server3-publish-root-ca` ingesteld op `run: "always"`.
+  - CA-afhankelijke server1-provisioners ingesteld op `run: "never"` en automatisch aangeroepen via een `trigger.after :up` op server3.
+  - Trigger voert uit: `webserver-template`, `ca-trust-gpo`, `server1-verify-web-enrollment` en `server1-trust-root-ca`.
+  - Clientvolgorde vastgelegd als: firewall, RSAT, domeinjoin met herstart, daarna CA-verificatie.
+- Hierdoor kan de volledige omgeving opnieuw worden opgebouwd met enkel `vagrant up`.
+- Checklistpunten afgerond:
+
+```markdown
+- [x] IIS installeren op server1, statische "Hello World"-pagina op poort 80
+- [x] DNS-record voor http://intranet.$jouw-domein toevoegen en testen
+- [x] RSAT-tools automatisch installeren op de Windows 11 client
+- [x] Firewallregels per server scripten
+- [x] Firewall ingeschakeld en correcte default policy toegepast
+- [x] Eerste aanscherping per server uitgevoerd en functioneel getest
+- [x] Overblijvende uitzonderingen en beheerregels minimaliseren
+- [x] Firewallconfiguratie automatisch in de normale provisioning toepassen
+- [x] Testen of `vagrant ssh` werkt zonder firewall volledig uit te schakelen
+```
+
+- **Status Week 5:** IIS, intranet-DNS, RSAT, client-domeinjoin, automatische CA-trust op de client, firewallbeleid en SSH-toegang volledig afgerond en geautomatiseerd.
