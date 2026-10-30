@@ -17,3 +17,6 @@ Thumbs.db
 # Secrets - nooit wachtwoorden in git!
 secrets.ps1
 *.env
+
+# Tijdelijke projectexports
+project-overzicht-*.txt

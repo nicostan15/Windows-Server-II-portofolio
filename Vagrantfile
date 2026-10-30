@@ -73,7 +73,7 @@ Vagrant.configure("2") do |config|
   config.winrm.retry_delay = 10
 
   # Maximale wachttijd voor het opstarten van een VM.
-  config.vm.boot_timeout = 600
+  config.vm.boot_timeout = 1200
 
   # ==================================================================
   # Server 1 — Domeincontroller, primaire DNS en later IIS
@@ -174,6 +174,11 @@ Vagrant.configure("2") do |config|
       privileged: true,
       run: "never"
 
+    server1.vm.provision "server1-trust-root-ca",
+    type: "shell",
+    run: "never",
+    path: "scripts/server1/05-trust-root-ca.ps1"
+
     server1.vm.provision "server1-verify-web-enrollment",
     type: "shell",
     run: "never",
@@ -181,11 +186,6 @@ Vagrant.configure("2") do |config|
     env: {
       "WS26_ADMIN_PASSWORD" => "JouwSterkWachtwoord123!"
     }
-
-    server1.vm.provision "server1-trust-root-ca",
-    type: "shell",
-    run: "never",
-    path: "scripts/server1/05-trust-root-ca.ps1"
 
         # Firewall: voorlopig alleen expliciet uitvoeren.
     server1.vm.provision "server1-firewall",
@@ -228,6 +228,19 @@ Vagrant.configure("2") do |config|
       path: "scripts/configure-dns-registration.ps1",
       args: "-Mode Server"
 
+    # Server2 aan het domein toevoegen en daarna herstarten.
+    server2.vm.provision "server2-domain",
+      type: "shell",
+      path: "scripts/server2/02-join-domain.ps1",
+      args: [
+        "-DomainName", domain_name,
+        "-OUPath", "OU=Servers,DC=WS26-JD,DC=hogent",
+        "-DomainAdminUser", domain_admin_user,
+        "-DomainAdminPassword", domain_admin_password
+      ],
+      privileged: true,
+      reboot: true
+
     # 3. Secundaire DNS configureren.
     server2.vm.provision "dns-secondary",
       type: "shell",
@@ -237,8 +250,6 @@ Vagrant.configure("2") do |config|
         "-SecondaryIP", "192.168.26.20",
         "-DomainName", domain_name
       ]
-
-    # Domeinjoin en firewallconfiguratie zijn nog toe te voegen.
 
         # Firewall: voorlopig alleen expliciet uitvoeren.
     server2.vm.provision "server2-firewall",
@@ -343,12 +354,12 @@ Vagrant.configure("2") do |config|
       run: "always",
       path: "scripts/server3/06-publish-root-ca.ps1"
 
-    # Na het opstarten van server3 worden de CA-afhankelijke stappen
-    # op server1 automatisch uitgevoerd.
+    # Eerst CA-beleid toepassen en vertrouwen controleren,
+    # daarna pas Web Enrollment via HTTPS testen.
     server3.trigger.after :up do |trigger|
       trigger.name = "Configure CA-dependent settings on server1"
       trigger.run = {
-        inline: "vagrant provision server1 --provision-with webserver-template,ca-trust-gpo,server1-verify-web-enrollment,server1-trust-root-ca"
+        inline: "vagrant provision server1 --provision-with webserver-template,ca-trust-gpo,server1-trust-root-ca,server1-verify-web-enrollment"
       }
     end
   end

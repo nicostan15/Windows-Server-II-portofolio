@@ -62,6 +62,8 @@
 
 ## Week 6 — 02/11 t/m 08/11: Automatiseren, testen & afwerken scripts
 
+- [ ] Server2 automatisch aan het domein toevoegen en controleren
+- [ ] Root-CA-vertrouwen controleren op alle vier de machines
 - [ ] Volledige omgeving vanaf nul opnieuw uitrollen met je scripts (test herhaalbaarheid!)
 - [ ] Scripts namen regelen, consitente benaming.
 - [ ] Scripts inhoud onnodige zaken weglaten

@@ -1,27 +1,115 @@
+#Requires -RunAsAdministrator
+
+param(
+    [string]$DomainName = "WS26-JD.hogent",
+    [string]$CACommonName = "WS26-JD-Root-CA"
+)
+
 $ErrorActionPreference = "Stop"
 
-Write-Output "Wachten tot domeinlidmaatschap actief is..."
-Start-Sleep -Seconds 15
+$Computer = Get-CimInstance Win32_ComputerSystem
 
-Write-Output "Group Policy vernieuwen..."
-gpupdate /force
-
-$Thumbprint = "226C58F452BB9970BD08435929CCEF1DE44670F7"
-
-$Cert = Get-ChildItem Cert:\LocalMachine\Root |
-    Where-Object Thumbprint -eq $Thumbprint
-
-if (-not $Cert) {
-    throw "Root-CA-certificaat ontbreekt in Trusted Root op de client."
+if (
+    -not $Computer.PartOfDomain -or
+    $Computer.Domain -ine $DomainName
+) {
+    throw "De client moet lid zijn van $DomainName en na de domeinjoin herstart zijn."
 }
 
-Write-Output "Root-CA aanwezig:"
-$Cert | Select-Object Subject, Thumbprint, NotAfter
+$CAConfig = "server3.$DomainName\$CACommonName"
 
-$Response = Invoke-WebRequest -Uri "http://intranet.WS26-JD.hogent" -UseBasicParsing
+$CertificatePath = Join-Path `
+    $env:TEMP `
+    ("WS2-ExpectedRootCA-" + [guid]::NewGuid().ToString("N") + ".cer")
 
-if ($Response.StatusCode -ne 200) {
-    throw "Intranet is niet bereikbaar."
+try {
+    Write-Output "Publiek certificaat van de huidige CA ophalen..."
+
+    $CertutilArguments = @(
+    '-f'
+    '-config'
+    $CAConfig
+    '-ca.cert'
+    $CertificatePath
+    )
+
+    & certutil.exe @CertutilArguments
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Ophalen van het CA-certificaat mislukt. Exitcode: $LASTEXITCODE"
+    }
+
+    $ExpectedCertificate =
+        [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
+            $CertificatePath
+        )
+
+    $ExpectedThumbprint = $ExpectedCertificate.Thumbprint
+
+    Write-Output "Verwachte Root-CA-thumbprint: $ExpectedThumbprint"
+    Write-Output "Computerbeleid vernieuwen..."
+
+    & gpupdate.exe /target:computer /force /wait:120
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Vernieuwen van computerbeleid mislukt. Exitcode: $LASTEXITCODE"
+    }
+
+    $Deadline = (Get-Date).AddMinutes(3)
+    $RootCertificate = $null
+
+    do {
+        $RootCertificate = Get-Item `
+            -Path "Cert:\LocalMachine\Root\$ExpectedThumbprint" `
+            -ErrorAction SilentlyContinue
+
+        if ($RootCertificate) {
+            break
+        }
+
+        Write-Output "Huidige Root-CA nog niet aanwezig; opnieuw controleren over 10 seconden..."
+        Start-Sleep -Seconds 10
+    }
+    while ((Get-Date) -lt $Deadline)
+
+    if (-not $RootCertificate) {
+        throw "Huidige Root-CA $ExpectedThumbprint ontbreekt in Trusted Root na beleidsvernieuwing."
+    }
+
+    $Now = Get-Date
+
+    if (
+        $RootCertificate.NotBefore -gt $Now -or
+        $RootCertificate.NotAfter -le $Now
+    ) {
+        throw "Het Root-CA-certificaat is momenteel niet geldig."
+    }
+
+    Write-Output "Root-CA aanwezig:"
+
+    $RootCertificate |
+        Format-List Subject, Thumbprint, NotBefore, NotAfter |
+        Out-String -Width 200 |
+        Write-Output
+
+    $IntranetUrl = "http://intranet.$DomainName"
+
+    Write-Output "Intranet testen: $IntranetUrl"
+
+    $Response = Invoke-WebRequest `
+        -Uri $IntranetUrl `
+        -UseBasicParsing `
+        -TimeoutSec 30
+
+    if ($Response.StatusCode -ne 200) {
+        throw "Onverwachte HTTP-status voor intranet: $($Response.StatusCode)"
+    }
+
+    Write-Output "Intranet is bereikbaar: HTTP 200."
 }
-
-Write-Output "Intranet is bereikbaar: HTTP $($Response.StatusCode)."
+finally {
+    Remove-Item `
+        -Path $CertificatePath `
+        -Force `
+        -ErrorAction SilentlyContinue
+}

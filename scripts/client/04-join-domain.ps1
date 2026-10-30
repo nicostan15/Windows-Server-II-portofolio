@@ -19,4 +19,9 @@ $Credential = New-Object System.Management.Automation.PSCredential(
     $SecurePassword
 )
 
-Add-Computer -DomainName $DomainName -Credential $Credential -Restart
+Add-Computer `
+    -DomainName $DomainName `
+    -Credential $Credential `
+    -ErrorAction Stop
+
+Write-Output "Domeinjoin uitgevoerd. Vagrant herstart de client."

@@ -2,8 +2,8 @@
 
 <#
 .SYNOPSIS
-    Zorgt dat server1 het rootcertificaat van de Enterprise Root CA
-    vertrouwt via Active Directory autoenrollment.
+    Vernieuwt het computerbeleid en controleert of server1
+    het rootcertificaat van de Enterprise Root CA vertrouwt.
 #>
 
 param(
@@ -11,6 +11,14 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+Write-Output "Computerbeleid vernieuwen voor Root-CA-vertrouwen..."
+
+& gpupdate.exe /target:computer /force /wait:120
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Vernieuwen van computerbeleid is mislukt. Exitcode: $LASTEXITCODE"
+}
 
 Write-Output "Root-CA-vertrouwen controleren op server1..."
 
@@ -20,8 +28,15 @@ $RootCertificate = $null
 while ((Get-Date) -lt $Deadline) {
     & certutil.exe -pulse | Out-Null
 
+    $Now = Get-Date
+
     $RootCertificate = Get-ChildItem Cert:\LocalMachine\Root |
-        Where-Object { $_.Subject -like "*$CACommonName*" } |
+        Where-Object {
+            $_.Subject -like "*$CACommonName*" -and
+            $_.NotBefore -le $Now -and
+            $_.NotAfter -gt $Now
+        } |
+        Sort-Object NotAfter -Descending |
         Select-Object -First 1
 
     if ($RootCertificate) {
@@ -33,7 +48,7 @@ while ((Get-Date) -lt $Deadline) {
 }
 
 if (-not $RootCertificate) {
-    throw "Rootcertificaat '$CACommonName' is niet binnen drie minuten ontvangen."
+    throw "Rootcertificaat '$CACommonName' is niet binnen drie minuten na de beleidsvernieuwing gevonden."
 }
 
 Write-Output "Rootcertificaat aanwezig in Trusted Root:"

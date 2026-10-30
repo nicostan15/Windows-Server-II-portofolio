@@ -208,12 +208,22 @@ function Set-LabAllowRule {
         -Name $Name `
         -ErrorAction SilentlyContinue
 
-    if ($Existing) {
-        Set-NetFirewallRule @Parameters | Out-Null
-    }
-    else {
-        New-NetFirewallRule @Parameters | Out-Null
-    }
+if ($Existing) {
+    # Gebruik Name als enige selectieparameter.
+    # DisplayName en Group zijn bij Set-NetFirewallRule
+    # eveneens selectieparameters en mogen hier niet mee.
+    $UpdateParameters = $Parameters.Clone()
+
+    [void]$UpdateParameters.Remove('DisplayName')
+    [void]$UpdateParameters.Remove('Group')
+
+    $UpdateParameters.NewDisplayName = $Name
+
+    Set-NetFirewallRule @UpdateParameters | Out-Null
+}
+else {
+    New-NetFirewallRule @Parameters | Out-Null
+}
 
     [void]$DesiredNames.Add($Name)
     Write-Output "Toegestaan: $Name"
@@ -227,7 +237,7 @@ try {
         -LocalPort '5985' `
         -InterfaceAlias $NatInterface `
         -RemoteAddress $NatGateway `
-        -Service 'WinRM'
+        -Service 'Any'
 
     Set-LabAllowRule `
         -Name 'WS2-Managed-SSH-NAT' `
