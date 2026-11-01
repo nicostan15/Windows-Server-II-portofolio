@@ -4,10 +4,10 @@ Vervang je huidige week 6 door onderstaande uitgebreide checklist. De punten ove
 
 ### 1. Werkende versie veiligstellen
 
-- [ ] Huidige werkende scripts en `Vagrantfile` vastleggen in Git vóór verdere wijzigingen.
-- [ ] Herstelmogelijkheid voorzien voor de werkende omgeving vóór de schone opbouwtest.
-- [ ] Succesvolle testuitvoer bewaren in het testdocument: CA-vertrouwen, Web Enrollment en intranet.
-- [ ] Wijzigingen per onderdeel uitvoeren en testen, niet alles tegelijk aanpassen.
+- [x] Huidige werkende scripts en `Vagrantfile` vastleggen in Git vóór verdere wijzigingen.
+- [x] Herstelmogelijkheid voorzien voor de werkende omgeving vóór de schone opbouwtest.
+- [x] Succesvolle testuitvoer bewaren in het testdocument: CA-vertrouwen, Web Enrollment en intranet.
+- [x] Wijzigingen per onderdeel uitvoeren en testen, niet alles tegelijk aanpassen.
 
 ### 2. Netwerkconfiguratie en domeinjoins afwerken
 
