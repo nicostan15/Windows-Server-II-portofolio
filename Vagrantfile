@@ -30,11 +30,29 @@
 # Alleen server3 aan het domein toevoegen/controleren:
 #   vagrant provision server3 --provision-with server3-domain
 #
-# Alleen de CA-rol op server3 installeren/controleren:
+# CA en Web Enrollment op server3 installeren/controleren:
 #   vagrant provision server3 --provision-with server3-ca
+#
+# Alleen HTTPS configureren nadat de templatepermissies gereed zijn:
+#   vagrant provision server3 --provision-with server3-web-https
+#
+# Let op: deze losse opdrachten voeren niet automatisch de volledige
+# CA-afhankelijke onderhoudsketen uit. Zie de deploymentdocumentatie.
 #
 # Alleen DHCP op server3 installeren/configureren:
 #   vagrant provision server3 --provision-with server3-dhcp
+# Provisioningbeleid:
+# - Standaard: installatie/configuratie tijdens de eerste uitrol.
+# - always: firewallbeleid, rootcertificaatpublicatie en clientcontrole
+#   opnieuw uitvoeren bij Vagrant up/reload.
+# - never: afhankelijkheidsgevoelige CA-stappen uitsluitend expliciet
+#   aanroepen, in de daarvoor vastgelegde triggerketen.
+#
+# Voor gericht onderhoud:
+#   vagrant provision <machine> --provision-with <provisionernaam>
+#
+# Een volledige herprovisioning kan ook domeinjoin-/promotieprovisioners
+# met reboot: true opnieuw uitvoeren.
 
 Vagrant.configure("2") do |config|
 
@@ -97,7 +115,8 @@ Vagrant.configure("2") do |config|
     end
 
     # 1. Host-Only IP instellen.
-    server1.vm.provision "shell",
+    server1.vm.provision "server1-network",
+      type: "shell",
       path: "scripts/configure-network.ps1",
       args: "-IPAddress 192.168.26.10"
 
@@ -155,7 +174,7 @@ Vagrant.configure("2") do |config|
 
     server1.vm.provision "server1-iis",
       type: "shell",
-      path: "scripts/server1/06-iis.ps1",
+      path: "scripts/server1/iis.ps1",
       args: [
         "-DomainName", domain_name
       ],
@@ -177,17 +196,18 @@ Vagrant.configure("2") do |config|
     server1.vm.provision "server1-trust-root-ca",
     type: "shell",
     run: "never",
-    path: "scripts/server1/05-trust-root-ca.ps1"
+    path: "scripts/server1/trust-root-ca.ps1"
 
     server1.vm.provision "server1-verify-web-enrollment",
     type: "shell",
     run: "never",
-    path: "scripts/server1/04-verify-web-enrollment.ps1",
+    path: "scripts/server1/verify-web-enrollment.ps1",
     env: {
       "WS26_ADMIN_PASSWORD" => "JouwSterkWachtwoord123!"
     }
 
-        # Firewall: voorlopig alleen expliciet uitvoeren.
+    # Firewallbeleid opnieuw toepassen bij Vagrant up/reload
+    # volgens de ingestelde run: "always".
     server1.vm.provision "server1-firewall",
       type: "shell",
       path: "scripts/configure-firewall.ps1",
@@ -218,7 +238,8 @@ Vagrant.configure("2") do |config|
     end
 
     # 1. Host-Only IP instellen.
-    server2.vm.provision "shell",
+    server2.vm.provision "server2-network",
+      type: "shell",
       path: "scripts/configure-network.ps1",
       args: "-IPAddress 192.168.26.20"
 
@@ -231,7 +252,7 @@ Vagrant.configure("2") do |config|
     # Server2 aan het domein toevoegen en daarna herstarten.
     server2.vm.provision "server2-domain",
       type: "shell",
-      path: "scripts/server2/02-join-domain.ps1",
+      path: "scripts/server2/join-domain.ps1",
       args: [
         "-DomainName", domain_name,
         "-OUPath", "OU=Servers,DC=WS26-JD,DC=hogent",
@@ -244,7 +265,7 @@ Vagrant.configure("2") do |config|
     # 3. Secundaire DNS configureren.
     server2.vm.provision "dns-secondary",
       type: "shell",
-      path: "scripts/server2/03-dns-secondary.ps1",
+      path: "scripts/server2/dns-secondary.ps1",
       args: [
         "-PrimaryIP", "192.168.26.10",
         "-SecondaryIP", "192.168.26.20",
@@ -282,7 +303,8 @@ Vagrant.configure("2") do |config|
     end
 
     # 1. Host-Only IP instellen.
-    server3.vm.provision "shell",
+    server3.vm.provision "server3-network",
+      type: "shell",
       path: "scripts/configure-network.ps1",
       args: "-IPAddress 192.168.26.30"
 
@@ -298,7 +320,7 @@ Vagrant.configure("2") do |config|
     # reboot: true herstart ook wanneer het script de join overslaat.
     server3.vm.provision "server3-domain",
       type: "shell",
-      path: "scripts/server3/02-join-domain.ps1",
+      path: "scripts/server3/join-domain.ps1",
       args: [
         "-DomainName", domain_name,
         "-OUPath", "OU=Servers,DC=WS26-JD,DC=hogent",
@@ -308,12 +330,12 @@ Vagrant.configure("2") do |config|
       privileged: true,
       reboot: true
 
-    # 4. Certification Authority-rol installeren/controleren.
-    # Het huidige script installeert alleen de CA-rol.
-    # Enterprise Root CA installeren en configureren.
+    # 4. Enterprise Root CA en CA Web Enrollment installeren/configureren.
+    # De certificaataanvraag en HTTPS-configuratie volgen apart,
+    # nadat de templatepermissies op server1 zijn ingesteld.
     server3.vm.provision "server3-ca",
       type: "shell",
-      path: "scripts/server3/03-ca.ps1",
+      path: "scripts/server3/ca.ps1",
       args: [
         "-DomainName", domain_name,
         "-DomainAdminUser", domain_admin_user,
@@ -321,6 +343,19 @@ Vagrant.configure("2") do |config|
         "-CACommonName", "WS26-JD-Root-CA"
       ],
       privileged: true
+
+        # Alleen expliciet uitvoeren nadat de templatepermissies
+    # op server1 zijn geconfigureerd.
+    server3.vm.provision "server3-web-https",
+      type: "shell",
+      path: "scripts/server3/configure-web-enrollment-https.ps1",
+      args: [
+        "-DomainName", domain_name,
+        "-DomainAdminUser", domain_admin_user,
+        "-DomainAdminPassword", domain_admin_password
+      ],
+      privileged: true,
+      run: "never"
 
     # 5. DHCP installeren en configureren.
     # Het huidige script configureert:
@@ -331,10 +366,10 @@ Vagrant.configure("2") do |config|
     # - Optie 15: WS26-JD.hogent
     #
     # Geen routeroptie voor het interne Host-Only-netwerk.
-    # AD-autorisatie en netwerkbindings zijn nog toe te voegen.
-        server3.vm.provision "server3-dhcp",
+    # Inclusief AD-autorisatie en binding aan de interne interface.
+    server3.vm.provision "server3-dhcp",
       type: "shell",
-      path: "scripts/server3/04-dhcp.ps1",
+      path: "scripts/server3/dhcp.ps1",
       args: [
         "-DomainAdminUser", domain_admin_user,
         "-DomainAdminPassword", domain_admin_password
@@ -349,17 +384,58 @@ Vagrant.configure("2") do |config|
       privileged: true,
       run: "always"
 
+
+    # Publicatie van het publieke rootcertificaat bij iedere
+    # Vagrant up/reload opnieuw uitvoeren.
     server3.vm.provision "server3-publish-root-ca",
       type: "shell",
       run: "always",
-      path: "scripts/server3/06-publish-root-ca.ps1"
+      path: "scripts/server3/publish-root-ca.ps1"
 
-    # Eerst CA-beleid toepassen en vertrouwen controleren,
-    # daarna pas Web Enrollment via HTTPS testen.
+    # CA-afhankelijke naverwerking na de up-actie voor server3.
+    # Server1 moet al draaien en bereikbaar zijn.
+    # Volgorde: templatepermissies → HTTPS-configuratie → vertrouwen/test.
+    # Losse vagrant provision-opdrachten starten deze after-up-keten niet.
+    # 1. Templatepermissies gereedmaken vóór de certificaataanvraag.
+    # CA-afhankelijke naverwerking na de Vagrant up-actie voor server3.
+    #
+    # Volgorde:
+    # 1. Templatepermissies op server1.
+    # 2. Certificaataanvraag/hergebruik en HTTPS op server3.
+    # 3. CA-vertrouwen en HTTPS-verificatie op server1.
+    #
+    # trigger.run voert op de host expliciete vagrant provision-
+    # opdrachten uit. Server1 moet daarvoor al draaien en bereikbaar zijn.
+    #
+    # Niet automatisch aangeroepen door vagrant provision, reload,
+    # resume of een herstart vanuit Windows/VirtualBox.
+    #
+    # Dit is geen eenmalige installatiestap. De aangeroepen scripts
+    # moeten herhaalbaar zijn. Bij een fout stopt de keten;
+    # eerdere wijzigingen worden niet teruggedraaid.
     server3.trigger.after :up do |trigger|
-      trigger.name = "Configure CA-dependent settings on server1"
+      trigger.name = "Configure WebServer template permissions"
+      trigger.on_error = :halt
       trigger.run = {
-        inline: "vagrant provision server1 --provision-with webserver-template,ca-trust-gpo,server1-trust-root-ca,server1-verify-web-enrollment"
+        inline: "vagrant provision server1 --provision-with webserver-template"
+      }
+    end
+
+    # 2. Template publiceren, certificaat aanvragen en HTTPS configureren.
+    server3.trigger.after :up do |trigger|
+      trigger.name = "Configure CA Web Enrollment HTTPS"
+      trigger.on_error = :halt
+      trigger.run = {
+        inline: "vagrant provision server3 --provision-with server3-web-https"
+      }
+    end
+
+    # 3. Vertrouwen configureren en daarna HTTPS verifiëren.
+    server3.trigger.after :up do |trigger|
+      trigger.name = "Configure CA trust and verify Web Enrollment"
+      trigger.on_error = :halt
+      trigger.run = {
+        inline: "vagrant provision server1 --provision-with ca-trust-gpo,server1-trust-root-ca,server1-verify-web-enrollment"
       }
     end
   end
@@ -393,13 +469,12 @@ Vagrant.configure("2") do |config|
 
     client.vm.provision "client-rsat",
       type: "shell",
-      path: "scripts/client/02-install-rsat.ps1",
+      path: "scripts/client/install-rsat.ps1",
       privileged: true
 
-    # De Host-Only-interface moet een adres via Windows DHCP krijgen.
-    # De Host-Only-interface ontvangt een adres via Windows DHCP.
-    # RSAT en de domeinjoin worden automatisch geconfigureerd.
-        # Firewall: voorlopig alleen expliciet uitvoeren.
+    # De interne clientinterface hoort een adres via DHCP op server3
+    # te ontvangen. DHCP en domein-DNS moeten vóór de clientjoin werken.
+    # Firewallbeleid toepassen; provisioner staat op run: "always".
     client.vm.provision "client-firewall",
       type: "shell",
       path: "scripts/client/configure-client-firewall.ps1",
@@ -408,14 +483,16 @@ Vagrant.configure("2") do |config|
 
     client.vm.provision "client-domain",
       type: "shell",
-      path: "scripts/client/04-join-domain.ps1",
+      path: "scripts/client/join-domain.ps1",
       privileged: true,
       reboot: true
 
+    # CA-vertrouwen bij iedere Vagrant up/reload controleren.
+    # Een mislukte controle moet zichtbaar tot een fout leiden.
     client.vm.provision "client-verify-ca",
       type: "shell",
       run: "always",
-      path: "scripts/client/03-verify-ca.ps1"
+      path: "scripts/client/verify-ca.ps1"
   end
 
 end

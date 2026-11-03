@@ -1,4 +1,4 @@
-# scripts/server1/04-verify-web-enrollment.ps1
+# scripts/server1/verify-web-enrollment.ps1
 # Controleert de Web Enrollment-ingang vanaf server1.
 
 $ErrorActionPreference = "Stop"

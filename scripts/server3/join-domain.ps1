@@ -51,9 +51,54 @@ $Credential = [System.Management.Automation.PSCredential]::new(
     $SecurePassword
 )
 
-# Interne DNS-servers instellen vóór de domeinjoin.
+# Interne interface herkennen aan het verwachte server3-adres.
+$InternalAddresses = @(
+    Get-NetIPAddress -AddressFamily IPv4 -PolicyStore ActiveStore |
+        Where-Object { $_.IPAddress -eq "192.168.26.30" }
+)
+
+if ($InternalAddresses.Count -ne 1) {
+    throw "Verwacht precies een interface met IP-adres 192.168.26.30; gevonden: $($InternalAddresses.Count)."
+}
+
+$InternalAddress = $InternalAddresses[0]
+
+if ($InternalAddress.PrefixLength -ne 24) {
+    throw "De interne interface heeft niet de verwachte prefix /24."
+}
+
+if ($InternalAddress.AddressState.ToString() -ne "Preferred") {
+    throw "Het interne IP-adres is niet bruikbaar: $($InternalAddress.AddressState)."
+}
+
+$InternalIndex = $InternalAddress.InterfaceIndex
+
+$InternalAdapter = Get-NetAdapter -InterfaceIndex $InternalIndex
+
+if ($InternalAdapter.Status -ne "Up") {
+    throw "De interne interface is niet actief."
+}
+
+$InternalDefaultRoutes = @(
+    Get-NetRoute `
+        -InterfaceIndex $InternalIndex `
+        -AddressFamily IPv4 `
+        -DestinationPrefix "0.0.0.0/0" `
+        -PolicyStore ActiveStore
+)
+
+if ($InternalDefaultRoutes.Count -gt 0) {
+    throw "De geselecteerde interne interface heeft een default-route. DNS wordt niet gewijzigd."
+}
+
+Write-Output (
+    "Interne interface geselecteerd via IP-adres: {0}, index {1}" -f
+    $InternalAdapter.Name, $InternalIndex
+)
+
+# Alleen op de gecontroleerde interne interface DNS instellen.
 Set-DnsClientServerAddress `
-    -InterfaceAlias "Ethernet 2" `
+    -InterfaceIndex $InternalIndex `
     -ServerAddresses "192.168.26.10", "192.168.26.20"
 
 Write-Output "Server3 toevoegen aan domein $DomainName..."

@@ -190,6 +190,53 @@ Get-DhcpServerv4OptionValue -ScopeId $ScopeId -ErrorAction Stop |
     Write-Output
 
 # ------------------------------------------------------------------
+# Geen client-DNS-records laten registreren door DHCP.
+# Clientregistratie zelf wordt afzonderlijk op de client beheerd.
+# ------------------------------------------------------------------
+
+Write-Output "DNS-registratie door DHCP uitschakelen..."
+
+# Serverniveau: standaardbeleid voor scopes zonder eigen instelling.
+Set-DhcpServerv4DnsSetting `
+    -DynamicUpdates Never `
+    -ErrorAction Stop
+
+# Bestaande scope expliciet configureren.
+Set-DhcpServerv4DnsSetting `
+    -ScopeId $ScopeId `
+    -DynamicUpdates Never `
+    -ErrorAction Stop
+
+$ServerDnsSettings = Get-DhcpServerv4DnsSetting -ErrorAction Stop
+
+$ScopeDnsSettings = Get-DhcpServerv4DnsSetting `
+    -ScopeId $ScopeId `
+    -ErrorAction Stop
+
+if (
+    $ServerDnsSettings.DynamicUpdates.ToString() -ne "Never" -or
+    $ScopeDnsSettings.DynamicUpdates.ToString() -ne "Never"
+) {
+    throw "Controle mislukt: DNS-registratie door DHCP is niet overal uitgeschakeld."
+}
+
+Write-Output "Controle DHCP-DNS-beleid op serverniveau:"
+
+$ServerDnsSettings |
+    Format-List DynamicUpdates, DisableDnsPtrRRUpdate,
+        UpdateDnsRRForOlderClients |
+    Out-String -Width 200 |
+    Write-Output
+
+Write-Output "Controle DHCP-DNS-beleid voor scope $ScopeId :"
+
+$ScopeDnsSettings |
+    Format-List DynamicUpdates, DisableDnsPtrRRUpdate,
+        UpdateDnsRRForOlderClients |
+    Out-String -Width 200 |
+    Write-Output
+
+# ------------------------------------------------------------------
 # DHCP-serverdienst uitsluitend aan de interne IPv4-interface binden.
 # ------------------------------------------------------------------
 
