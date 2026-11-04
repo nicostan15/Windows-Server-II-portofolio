@@ -46,7 +46,7 @@
 # - always: firewallbeleid, rootcertificaatpublicatie en clientcontrole
 #   opnieuw uitvoeren bij Vagrant up/reload.
 # - never: afhankelijkheidsgevoelige CA-stappen uitsluitend expliciet
-#   aanroepen, in de daarvoor vastgelegde triggerketen.
+#   uitvoeren vanaf de host, in de volgorde uit de deployment guide.
 #
 # Voor gericht onderhoud:
 #   vagrant provision <machine> --provision-with <provisionernaam>
@@ -115,7 +115,7 @@ Vagrant.configure("2") do |config|
     end
 
     # 1. Host-Only IP instellen.
-    server1.vm.provision "server1-network",
+    server1.vm.ion "server1-network",
       type: "shell",
       path: "scripts/configure-network.ps1",
       args: "-IPAddress 192.168.26.10"
@@ -272,7 +272,7 @@ Vagrant.configure("2") do |config|
         "-DomainName", domain_name
       ]
 
-        # Firewall: voorlopig alleen expliciet uitvoeren.
+    # Firewallbeleid toepassen volgens run: "always".
     server2.vm.provision "server2-firewall",
       type: "shell",
       path: "scripts/configure-firewall.ps1",
@@ -392,52 +392,17 @@ Vagrant.configure("2") do |config|
       run: "always",
       path: "scripts/server3/publish-root-ca.ps1"
 
-    # CA-afhankelijke naverwerking na de up-actie voor server3.
-    # Server1 moet al draaien en bereikbaar zijn.
-    # Volgorde: templatepermissies → HTTPS-configuratie → vertrouwen/test.
-    # Losse vagrant provision-opdrachten starten deze after-up-keten niet.
-    # 1. Templatepermissies gereedmaken vóór de certificaataanvraag.
-    # CA-afhankelijke naverwerking na de Vagrant up-actie voor server3.
+    # CA-afhankelijke naverwerking wordt expliciet vanaf de host uitgevoerd.
+    # Voorwaarden: server1 en server3 draaien; server3 is domeinlid en de CA is klaar.
     #
     # Volgorde:
-    # 1. Templatepermissies op server1.
-    # 2. Certificaataanvraag/hergebruik en HTTPS op server3.
-    # 3. CA-vertrouwen en HTTPS-verificatie op server1.
+    # 1. server1: webserver-template
+    # 2. server3: server3-web-https
+    # 3. server1: ca-trust-gpo
+    # 4. server1: server1-trust-root-ca
+    # 5. server1: server1-verify-web-enrollment
     #
-    # trigger.run voert op de host expliciete vagrant provision-
-    # opdrachten uit. Server1 moet daarvoor al draaien en bereikbaar zijn.
-    #
-    # Niet automatisch aangeroepen door vagrant provision, reload,
-    # resume of een herstart vanuit Windows/VirtualBox.
-    #
-    # Dit is geen eenmalige installatiestap. De aangeroepen scripts
-    # moeten herhaalbaar zijn. Bij een fout stopt de keten;
-    # eerdere wijzigingen worden niet teruggedraaid.
-    server3.trigger.after :up do |trigger|
-      trigger.name = "Configure WebServer template permissions"
-      trigger.on_error = :halt
-      trigger.run = {
-        inline: "vagrant provision server1 --provision-with webserver-template"
-      }
-    end
-
-    # 2. Template publiceren, certificaat aanvragen en HTTPS configureren.
-    server3.trigger.after :up do |trigger|
-      trigger.name = "Configure CA Web Enrollment HTTPS"
-      trigger.on_error = :halt
-      trigger.run = {
-        inline: "vagrant provision server3 --provision-with server3-web-https"
-      }
-    end
-
-    # 3. Vertrouwen configureren en daarna HTTPS verifiëren.
-    server3.trigger.after :up do |trigger|
-      trigger.name = "Configure CA trust and verify Web Enrollment"
-      trigger.on_error = :halt
-      trigger.run = {
-        inline: "vagrant provision server1 --provision-with ca-trust-gpo,server1-trust-root-ca,server1-verify-web-enrollment"
-      }
-    end
+    # Geen geneste Vagrant-opdrachten vanuit after-up-triggers.
   end
 
   # ==================================================================
@@ -484,6 +449,13 @@ Vagrant.configure("2") do |config|
     client.vm.provision "client-domain",
       type: "shell",
       path: "scripts/client/join-domain.ps1",
+      args: [
+        "-DomainName", domain_name,
+        "-OUPath", "OU=Clients,DC=WS26-JD,DC=hogent",
+        "-DomainController", "server1.#{domain_name}",
+        "-DomainAdminUser", domain_admin_user,
+        "-DomainAdminPassword", domain_admin_password
+      ],
       privileged: true,
       reboot: true
 

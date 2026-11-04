@@ -319,16 +319,6 @@ try {
                 -InterfaceAlias $LabInterface `
                 -RemoteAddress 'Any' `
                 -Service 'DHCPServer'
-
-
-            # Dynamische RPC/DCOM-poorten voor externe CA-toegang.
-            # AD CS gebruikt na TCP 135 een dynamische hoge TCP-poort.
-            Set-LabAllowRule `
-                -Name 'WS2-Managed-Server3-RPC-Dynamic' `
-                -Protocol TCP `
-                -LocalPort '49152-65535' `
-                -InterfaceAlias $LabInterface `
-                -RemoteAddress $LabSubnet
         }
     }
 

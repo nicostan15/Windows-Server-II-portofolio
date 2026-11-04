@@ -1,0 +1,3293 @@
+Server1
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> & {
+>>     $Failures = @()
+>>
+>>     foreach ($File in Get-ChildItem .\scripts -Recurse -File -Filter *.ps1) {
+>>         $Tokens = $null
+>>         $ParseErrors = $null
+>>
+>>         $Ast = [System.Management.Automation.Language.Parser]::ParseFile(
+>>             $File.FullName,
+>>             [ref]$Tokens,
+>>             [ref]$ParseErrors
+>>         )
+>>
+>>         foreach ($Item in $ParseErrors) {
+>>             $Failures += [PSCustomObject]@{
+>>                 File = $File.FullName
+>>                 Line = $Item.Extent.StartLineNumber
+>>                 Error = $Item.Message
+>>             }
+>>         }
+>>
+>>         $HereStrings = $Ast.FindAll({
+>>             param($Node)
+>>
+>>             $Node -is
+>>                 [System.Management.Automation.Language.StringConstantExpressionAst] -and
+>>             $Node.StringConstantType -eq
+>>                 [System.Management.Automation.Language.StringConstantType]::SingleQuotedHereString
+>>         }, $true)
+>>
+>>         foreach ($HereString in $HereStrings) {
+>>             # Alleen bekende PowerShell-workerstrings controleren.
+>>             $Assignment = $HereString.Parent
+>>
+>>             while (
+>>                 $null -ne $Assignment -and
+>>                 $Assignment -isnot
+>>                     [System.Management.Automation.Language.AssignmentStatementAst]
+>>             ) {
+>>                 $Assignment = $Assignment.Parent
+>>             }
+>>
+>>             if (
+>>                 $null -eq $Assignment -or
+>>                 $Assignment.Left.Extent.Text -notin @(
+>>                     '$HelperScript',
+>>                     '$WorkerScript'
+>>                 )
+>>             ) {
+>>                 continue
+>>             }
+>>
+>>             $InnerTokens = $null
+>>             $InnerErrors = $null
+>>
+>>             $null = [System.Management.Automation.Language.Parser]::ParseInput(
+>>                 $HereString.Value,
+>>                 [ref]$InnerTokens,
+>>                 [ref]$InnerErrors
+>>             )
+>>
+>>             foreach ($Item in $InnerErrors) {
+>>                 $Failures += [PSCustomObject]@{
+>>                     File = $File.FullName
+>>                     Line = "Helperregel $($Item.Extent.StartLineNumber)"
+>>                     Error = $Item.Message
+>>                 }
+>>             }
+>>         }
+>>     }
+>>
+>>     if ($Failures.Count -gt 0) {
+>>         $Failures | Format-Table -Wrap -AutoSize
+>>         throw "PowerShell-syntaxiscontrole mislukt."
+>>     }
+>>
+>>     Write-Output "PASS: geen gevonden syntaxisfouten in scripts en herkende workers."
+>> }
+PASS: geen gevonden syntaxisfouten in scripts en herkende workers.
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> & "$env:ProgramFiles\Oracle\VirtualBox\VBoxManage.exe" --version
+7.2.22r175245
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio>
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> & "$env:ProgramFiles\Oracle\VirtualBox\VBoxManage.exe" list hostonlyifs
+Name:            VirtualBox Host-Only Ethernet Adapter #2
+GUID:            145c0890-0e65-46ce-b97c-7c1dce9d9287
+DHCP:            Disabled
+IPAddress:       192.168.62.1
+NetworkMask:     255.255.255.0
+IPV6Address:     fe80::54c3:66b3:cba3:cfda
+IPV6NetworkMaskPrefixLength: 64
+HardwareAddress: 0a:00:27:00:00:05
+MediumType:      Ethernet
+Wireless:        No
+Status:          Up
+VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter #2
+
+Name:            VirtualBox Host-Only Ethernet Adapter
+GUID:            47c176bc-cb79-4946-b05f-965a79dfd322
+DHCP:            Disabled
+IPAddress:       192.168.56.1
+NetworkMask:     255.255.255.0
+IPV6Address:     fe80::28d7:db08:e96c:306
+IPV6NetworkMaskPrefixLength: 64
+HardwareAddress: 0a:00:27:00:00:09
+MediumType:      Ethernet
+Wireless:        No
+Status:          Up
+VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter
+
+Name:            VirtualBox Host-Only Ethernet Adapter #3
+GUID:            656e79dd-7b60-4fdc-be4c-0012747e71fe
+DHCP:            Disabled
+IPAddress:       172.16.0.1
+NetworkMask:     255.255.0.0
+IPV6Address:     fe80::56c1:fc6c:fb2:e53
+IPV6NetworkMaskPrefixLength: 64
+HardwareAddress: 0a:00:27:00:00:0e
+MediumType:      Ethernet
+Wireless:        No
+Status:          Up
+VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter #3
+
+Name:            VirtualBox Host-Only Ethernet Adapter #5
+GUID:            eca2b23c-6259-4ba8-beca-f4c35b471318
+DHCP:            Disabled
+IPAddress:       192.168.25.1
+NetworkMask:     255.255.255.0
+IPV6Address:     fe80::3a66:480b:4eeb:4e7e
+IPV6NetworkMaskPrefixLength: 64
+HardwareAddress: 0a:00:27:00:00:1d
+MediumType:      Ethernet
+Wireless:        No
+Status:          Up
+VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter #5
+
+Name:            VirtualBox Host-Only Ethernet Adapter #4
+GUID:            f5ce412a-aca9-42da-9039-6930684710ab
+DHCP:            Disabled
+IPAddress:       10.11.2.1
+NetworkMask:     255.255.255.0
+IPV6Address:     fe80::87e7:87d6:5b04:1206
+IPV6NetworkMaskPrefixLength: 64
+HardwareAddress: 0a:00:27:00:00:1f
+MediumType:      Ethernet
+Wireless:        No
+Status:          Up
+VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter #4
+
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio>
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> & "$env:ProgramFiles\Oracle\VirtualBox\VBoxManage.exe" list dhcpservers
+NetworkName:    HackingLab
+Dhcpd IP:       10.0.2.2
+LowerIPAddress: 10.0.2.3
+UpperIPAddress: 10.0.2.254
+NetworkMask:    255.255.255.0
+Enabled:        Yes
+Global Configuration:
+    minLeaseTime:     default
+    defaultLeaseTime: default
+    maxLeaseTime:     default
+    Forced options:   None
+    Suppressed opts.: None
+        1/legacy: 255.255.255.0
+        3/legacy: 10.0.2.1
+        6/legacy: 193.190.173.1 193.190.173.2
+       15/legacy: hogent.be
+Groups:               None
+Individual Configs:   None
+
+NetworkName:    HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter #2
+Dhcpd IP:       0.0.0.0
+LowerIPAddress: 0.0.0.0
+UpperIPAddress: 0.0.0.0
+NetworkMask:    0.0.0.0
+Enabled:        No
+Global Configuration:
+    minLeaseTime:     default
+    defaultLeaseTime: default
+    maxLeaseTime:     default
+    Forced options:   None
+    Suppressed opts.: None
+        1/legacy: 0.0.0.0
+Groups:               None
+Individual Configs:   None
+
+NetworkName:    HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter
+Dhcpd IP:       0.0.0.0
+LowerIPAddress: 0.0.0.0
+UpperIPAddress: 0.0.0.0
+NetworkMask:    0.0.0.0
+Enabled:        No
+Global Configuration:
+    minLeaseTime:     default
+    defaultLeaseTime: default
+    maxLeaseTime:     default
+    Forced options:   None
+    Suppressed opts.: None
+        1/legacy: 0.0.0.0
+Groups:               None
+Individual Configs:   None
+
+NetworkName:    HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter #3
+Dhcpd IP:       0.0.0.0
+LowerIPAddress: 0.0.0.0
+UpperIPAddress: 0.0.0.0
+NetworkMask:    0.0.0.0
+Enabled:        No
+Global Configuration:
+    minLeaseTime:     default
+    defaultLeaseTime: default
+    maxLeaseTime:     default
+    Forced options:   None
+    Suppressed opts.: None
+        1/legacy: 0.0.0.0
+Groups:               None
+Individual Configs:   None
+
+NetworkName:    HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter #4
+Dhcpd IP:       0.0.0.0
+LowerIPAddress: 0.0.0.0
+UpperIPAddress: 0.0.0.0
+NetworkMask:    0.0.0.0
+Enabled:        No
+Global Configuration:
+    minLeaseTime:     default
+    defaultLeaseTime: default
+    maxLeaseTime:     default
+    Forced options:   None
+    Suppressed opts.: None
+        1/legacy: 0.0.0.0
+Groups:               None
+Individual Configs:   None
+
+NetworkName:    HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter #5
+Dhcpd IP:       0.0.0.0
+LowerIPAddress: 0.0.0.0
+UpperIPAddress: 0.0.0.0
+NetworkMask:    0.0.0.0
+Enabled:        No
+Global Configuration:
+    minLeaseTime:     default
+    defaultLeaseTime: default
+    maxLeaseTime:     default
+    Forced options:   None
+    Suppressed opts.: None
+        1/legacy: 0.0.0.0
+Groups:               None
+Individual Configs:   None
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> & "$env:ProgramFiles\Oracle\VirtualBox\VBoxManage.exe" showvminfo server1 --machinereadable |
+>>     Select-String '^(nic|hostonlyadapter|hostonlynet)[0-9]+='
+
+nic1="nat"
+hostonlyadapter2="VirtualBox Host-Only Ethernet Adapter #5"
+nic2="hostonly"
+nic3="none"
+nic4="none"
+nic5="none"
+nic6="none"
+nic7="none"
+nic8="none"
+
+
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> & "$env:ProgramFiles\Oracle\VirtualBox\VBoxManage.exe" showvminfo server2 --machinereadable |
+>>     Select-String '^(nic|hostonlyadapter|hostonlynet)[0-9]+='
+
+nic1="nat"
+hostonlyadapter2="VirtualBox Host-Only Ethernet Adapter #5"
+nic2="hostonly"
+nic3="none"
+nic4="none"
+nic5="none"
+nic6="none"
+nic7="none"
+nic8="none"
+
+
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> & "$env:ProgramFiles\Oracle\VirtualBox\VBoxManage.exe" showvminfo server3 --machinereadable |
+>>     Select-String '^(nic|hostonlyadapter|hostonlynet)[0-9]+='
+
+nic1="nat"
+hostonlyadapter2="VirtualBox Host-Only Ethernet Adapter #5"
+nic2="hostonly"
+nic3="none"
+nic4="none"
+nic5="none"
+nic6="none"
+nic7="none"
+nic8="none"
+
+
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> & "$env:ProgramFiles\Oracle\VirtualBox\VBoxManage.exe" showvminfo client --machinereadable |
+>>     Select-String '^(nic|hostonlyadapter|hostonlynet)[0-9]+='
+
+nic1="nat"
+hostonlyadapter2="VirtualBox Host-Only Ethernet Adapter #5"
+nic2="hostonly"
+nic3="none"
+nic4="none"
+nic5="none"
+nic6="none"
+nic7="none"
+nic8="none"
+
+
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> vagrant ssh server1
+Microsoft Windows [Version 10.0.26100.33158]
+(c) Microsoft Corporation. All rights reserved.
+
+ws26-jd\vagrant@SERVER1 C:\Users\vagrant>powershell
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\vagrant> hostname
+server1
+PS C:\Users\vagrant> whoami
+ws26-jd\vagrant
+PS C:\Users\vagrant> Get-CimInstance Win32_OperatingSystem |
+>>     Select-Object Caption, Version, BuildNumber
+
+Caption                                           Version    BuildNumber
+-------                                           -------    -----------
+Microsoft Windows Server 2025 Standard Evaluation 10.0.26100 26100
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-ItemProperty `
+>>     "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" |
+>>     Select-Object ProductName, InstallationType
+
+ProductName                             InstallationType
+-----------                             ----------------
+Windows Server 2025 Standard Evaluation Server Core
+
+
+PS C:\Users\vagrant> Get-NetAdapter |
+>>     Select-Object Name, ifIndex, Status, MacAddress
+
+Name       ifIndex Status MacAddress
+----       ------- ------ ----------
+Ethernet         7 Up     08-00-27-3A-05-5D
+Ethernet 2       5 Up     08-00-27-1B-7C-2A
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetIPConfiguration
+
+
+InterfaceAlias       : Ethernet 2
+InterfaceIndex       : 5
+InterfaceDescription : Intel(R) PRO/1000 MT Desktop Adapter #2
+NetProfile.Name      : WS26-JD.hogent
+IPv4Address          : 192.168.26.10
+IPv6DefaultGateway   :
+IPv4DefaultGateway   :
+DNSServer            : ::1
+                       127.0.0.1
+
+InterfaceAlias       : Ethernet
+InterfaceIndex       : 7
+InterfaceDescription : Intel(R) PRO/1000 MT Desktop Adapter
+NetProfile.Name      : WS26-JD.hogent
+IPv6Address          : fd17:625c:f037:2:907f:ec88:c2b:60e4
+IPv4Address          : 10.0.2.15
+IPv6DefaultGateway   : fe80::2
+IPv4DefaultGateway   : 10.0.2.2
+DNSServer            : ::1
+                       127.0.0.1
+
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetIPAddress -AddressFamily IPv4 |
+>>     Select-Object InterfaceAlias, IPAddress, PrefixLength, PrefixOrigin
+
+InterfaceAlias              IPAddress     PrefixLength PrefixOrigin
+--------------              ---------     ------------ ------------
+Ethernet 2                  192.168.26.10           24       Manual
+Ethernet                    10.0.2.15               24         Dhcp                    Loopback Pseudo-Interface 1 127.0.0.1                8    WellKnown                                                                                                                                                                                                  PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetRoute -AddressFamily IPv4 -DestinationPrefix "0.0.0.0/0" |
+>>     Select-Object InterfaceAlias, NextHop, RouteMetric
+
+InterfaceAlias NextHop  RouteMetric
+-------------- -------  -----------
+Ethernet       10.0.2.2           0
+
+
+PS C:\Users\vagrant> Get-DnsClientServerAddress -AddressFamily IPv4 |
+>>     Select-Object InterfaceAlias, ServerAddresses
+
+InterfaceAlias              ServerAddresses
+--------------              ---------------
+Ethernet                    {127.0.0.1}
+Ethernet 2                  {127.0.0.1}
+Loopback Pseudo-Interface 1 {}
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> $ActiveIndexes = @(
+>>     Get-NetAdapter |
+>>         Where-Object Status -eq "Up" |
+>>         Select-Object -ExpandProperty ifIndex
+>> )
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-DnsClient |
+>>     Where-Object { $_.InterfaceIndex -in $ActiveIndexes } |
+>>     Select-Object InterfaceAlias,
+>>         RegisterThisConnectionsAddress,
+>>         UseSuffixWhenRegistering
+
+InterfaceAlias RegisterThisConnectionsAddress UseSuffixWhenRegistering
+-------------- ------------------------------ ------------------------
+Ethernet                                False                    False
+Ethernet 2                               True                    False
+
+
+PS C:\Users\vagrant> Get-CimInstance Win32_ComputerSystem |
+>>     Select-Object Name, Domain, PartOfDomain, DomainRole
+
+Name    Domain         PartOfDomain DomainRole
+----    ------         ------------ ----------
+SERVER1 WS26-JD.hogent         True          5
+
+
+PS C:\Users\vagrant> Import-Module ActiveDirectory
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-ADDomain |
+>>     Select-Object DNSRoot, NetBIOSName, DomainMode
+
+DNSRoot        NetBIOSName        DomainMode
+-------        -----------        ----------
+WS26-JD.hogent WS26-JD     Windows2025Domain
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-ADForest |
+>>     Select-Object Name, ForestMode
+
+Name                  ForestMode
+----                  ----------
+WS26-JD.hogent Windows2025Forest
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-ADDomainController -Filter * |
+>>     Select-Object HostName, IPv4Address, IsGlobalCatalog
+
+HostName               IPv4Address   IsGlobalCatalog
+--------               -----------   ---------------
+server1.WS26-JD.hogent 192.168.26.10            True
+
+
+PS C:\Users\vagrant> Get-ADOrganizationalUnit -Filter * |
+>>     Select-Object Name, DistinguishedName |
+>>     Sort-Object Name
+
+Name               DistinguishedName
+----               -----------------
+Beheer             OU=Beheer,DC=WS26-JD,DC=hogent
+Clients            OU=Clients,DC=WS26-JD,DC=hogent
+Domain Controllers OU=Domain Controllers,DC=WS26-JD,DC=hogent
+Medewerkers        OU=Medewerkers,DC=WS26-JD,DC=hogent
+Servers            OU=Servers,DC=WS26-JD,DC=hogent
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-ADComputer -Filter * |
+>>     Select-Object Name, DistinguishedName |
+>>     Sort-Object Name
+
+Name    DistinguishedName
+----    -----------------
+CLIENT  CN=CLIENT,CN=Computers,DC=WS26-JD,DC=hogent
+SERVER1 CN=SERVER1,OU=Domain Controllers,DC=WS26-JD,DC=hogent
+SERVER2 CN=SERVER2,OU=Servers,DC=WS26-JD,DC=hogent
+SERVER3 CN=SERVER3,OU=Servers,DC=WS26-JD,DC=hogent
+
+
+PS C:\Users\vagrant> $Names = @(
+>>     "j.doe.adm",
+>>     "a.smit.adm",
+>>     "p.jansen",
+>>     "m.peeters"
+>> )
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> foreach ($Name in $Names) {
+>>     Get-ADUser -Identity $Name -Properties Enabled |                                >>         Select-Object SamAccountName, Enabled, DistinguishedName                    >> }                                                                                                                                                                          SamAccountName Enabled DistinguishedName
+-------------- ------- -----------------
+j.doe.adm         True CN=John Doe,OU=Beheer,DC=WS26-JD,DC=hogent
+a.smit.adm        True CN=Anna Smit,OU=Beheer,DC=WS26-JD,DC=hogent
+p.jansen          True CN=Piet Jansen,OU=Medewerkers,DC=WS26-JD,DC=hogent
+m.peeters         True CN=Marie Peeters,OU=Medewerkers,DC=WS26-JD,DC=hogent
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> $DomainSid = (Get-ADDomain).DomainSID.Value
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-ADGroupMember -Identity "$DomainSid-512" -Recursive |
+>>     Select-Object Name, SamAccountName, ObjectClass
+
+Name          SamAccountName ObjectClass
+----          -------------- -----------
+Administrator Administrator  user
+John Doe      j.doe.adm      user
+Anna Smit     a.smit.adm     user
+
+
+PS C:\Users\vagrant> foreach ($Name in @("p.jansen", "m.peeters")) {
+>>     Write-Output "===== Groepen van $Name ====="
+>>
+>>     Get-ADAccountAuthorizationGroup -Identity $Name |
+>>         Select-Object Name, SID |
+>>         Sort-Object Name
+>> }
+===== Groepen van p.jansen =====
+
+Name                               SID
+----                               ---
+Authenticated Users                S-1-5-11
+Domain Users                       S-1-5-21-128779917-4189327369-1406535214-513
+Everyone                           S-1-1-0
+Pre-Windows 2000 Compatible Access S-1-5-32-554
+Users                              S-1-5-32-545
+===== Groepen van m.peeters =====
+Authenticated Users                S-1-5-11
+Domain Users                       S-1-5-21-128779917-4189327369-1406535214-513
+Everyone                           S-1-1-0
+Pre-Windows 2000 Compatible Access S-1-5-32-554
+Users                              S-1-5-32-545
+
+
+PS C:\Users\vagrant> Get-WindowsFeature -Name AD-Domain-Services, DNS |
+>>     Select-Object Name, InstallState
+
+Name               InstallState
+----               ------------
+AD-Domain-Services    Installed
+DNS                   Installed
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-Service -Name DNS, NTDS |
+>>     Select-Object Name, Status
+
+Name  Status
+----  ------
+DNS  Running
+NTDS Running
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-DnsServerZone |
+>>     Select-Object ZoneName, ZoneType, IsDsIntegrated
+
+ZoneName                ZoneType IsDsIntegrated
+--------                -------- --------------
+_msdcs.WS26-JD.hogent   Primary            True
+0.in-addr.arpa          Primary           False
+127.in-addr.arpa        Primary           False
+255.in-addr.arpa        Primary           False
+26.168.192.in-addr.arpa Primary            True
+WS26-JD.hogent          Primary            True
+
+
+PS C:\Users\vagrant> exit
+
+ws26-jd\vagrant@SERVER1 C:\Users\vagrant>exit
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> ssh -p 2222 `
+>>     -l 'WS26-JD\Administrator' `
+>>     -o PreferredAuthentications=password `
+>>     -o PasswordAuthentication=yes `
+>>     -o PubkeyAuthentication=no `
+>>     127.0.0.1
+WS26-JD\Administrator@127.0.0.1's password:
+Microsoft Windows [Version 10.0.26100.33158]
+(c) Microsoft Corporation. All rights reserved.
+
+ws26-jd\administrator@SERVER1 C:\Users\administrator>powershell
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\administrator> & {
+>>     $ErrorActionPreference = "Stop"
+>>
+>>     $Expected = @(
+>>         @{ Name = "server1"; IP = "192.168.26.10"; PTR = "10" }
+>>         @{ Name = "server2"; IP = "192.168.26.20"; PTR = "20" }
+>>         @{ Name = "server3"; IP = "192.168.26.30"; PTR = "30" }
+>>     )
+>>
+>>     foreach ($DnsServer in @("server1", "server2")) {
+>>         Write-Output "===== DNS-server: $DnsServer ====="
+>>
+>>         $ARecords = @(
+>>             Get-DnsServerResourceRecord `
+>>                 -ComputerName $DnsServer `
+>>                 -ZoneName "WS26-JD.hogent" `
+>>                 -RRType A `
+>>                 -ErrorAction Stop
+>>         )
+>>
+>>         $PtrRecords = @(
+>>             Get-DnsServerResourceRecord `
+>>                 -ComputerName $DnsServer `
+>>                 -ZoneName "26.168.192.in-addr.arpa" `
+>>                 -RRType PTR `
+>>                 -ErrorAction Stop
+>>         )
+>>
+>>         foreach ($Item in $Expected) {
+>>             $A = @(
+>>                 $ARecords |
+>>                     Where-Object HostName -eq $Item.Name
+>>             )
+>>
+>>             $Ptr = @(
+>>                 $PtrRecords |
+>>                     Where-Object HostName -eq $Item.PTR
+>>             )
+>>
+>>             if (
+>>                 $A.Count -ne 1 -or
+>>                 $A.RecordData.IPv4Address.ToString() -ne $Item.IP
+>>             ) {
+>>                 throw "Afwijkend A-record voor $($Item.Name) op $DnsServer."
+>>             }
+>>
+>>             if (
+>>                 $Ptr.Count -ne 1 -or
+>>                 $Ptr.RecordData.PtrDomainName.TrimEnd(".") -ine
+>>                     "$($Item.Name).WS26-JD.hogent"
+>>             ) {
+>>                 throw "Afwijkend PTR-record voor $($Item.Name) op $DnsServer."
+>>             }
+>>
+>>             Write-Output "PASS: $($Item.Name), A en PTR correct."
+>>         }
+>>     }
+>> }
+===== DNS-server: server1 =====
+PASS: server1, A en PTR correct.
+PASS: server2, A en PTR correct.
+PASS: server3, A en PTR correct.
+===== DNS-server: server2 =====
+PASS: server1, A en PTR correct.
+PASS: server2, A en PTR correct.
+PASS: server3, A en PTR correct.
+PS C:\Users\administrator> exit
+
+ws26-jd\administrator@SERVER1 C:\Users\administrator>exit
+Connection to 127.0.0.1 closed.
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> vagrant ssh server1
+Microsoft Windows [Version 10.0.26100.33158]
+(c) Microsoft Corporation. All rights reserved.
+
+ws26-jd\vagrant@SERVER1 C:\Users\vagrant>powershell
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\vagrant> foreach ($DnsServer in @("server1", "server2")) {
+>>     foreach ($Zone in @(
+>>         "WS26-JD.hogent",
+>>         "26.168.192.in-addr.arpa"
+>>     )) {
+>>         Write-Output "===== $DnsServer / $Zone ====="
+>>
+>>         Get-DnsServerResourceRecord `
+>>             -ComputerName $DnsServer `
+>>             -ZoneName $Zone `
+>>             -RRType NS |
+>>             Select-Object HostName,
+>>                 @{Name = "NameServer"; Expression = {
+>>                     $_.RecordData.NameServer
+>>                 }}
+>>     }
+>> }
+===== server1 / WS26-JD.hogent =====
+
+HostName NameServer
+-------- ----------
+@        server1.ws26-jd.hogent.
+@        server2.WS26-JD.hogent.
+_msdcs   server1.ws26-jd.hogent.
+===== server1 / 26.168.192.in-addr.arpa =====
+@        server2.WS26-JD.hogent.
+@        server1.ws26-jd.hogent.
+===== server2 / WS26-JD.hogent =====
+Get-DnsServerResourceRecord : Failed to get the zone information for WS26-JD.hogent
+on server server2.
+At line:8 char:9
++         Get-DnsServerResourceRecord `
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : PermissionDenied: (WS26-JD.hogent:root/Microsoft/...rRe
+   sourceRecord) [Get-DnsServerResourceRecord], CimException
+    + FullyQualifiedErrorId : WIN32 5,Get-DnsServerResourceRecord
+
+===== server2 / 26.168.192.in-addr.arpa =====
+Get-DnsServerResourceRecord : Failed to get the zone information for
+26.168.192.in-addr.arpa on server server2.
+At line:8 char:9
++         Get-DnsServerResourceRecord `
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : PermissionDenied: (26.168.192.in-addr.arpa:root/Microso
+   ft/...rResourceRecord) [Get-DnsServerResourceRecord], CimException
+    + FullyQualifiedErrorId : WIN32 5,Get-DnsServerResourceRecord
+
+
+
+PS C:\Users\vagrant> exit
+
+ws26-jd\vagrant@SERVER1 C:\Users\vagrant>exit
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> ssh -p 2222 `
+>>     -l 'WS26-JD\Administrator' `
+>>     -o PreferredAuthentications=password `
+>>     -o PasswordAuthentication=yes `
+>>     -o PubkeyAuthentication=no `
+>>     127.0.0.1
+WS26-JD\Administrator@127.0.0.1's password:
+Microsoft Windows [Version 10.0.26100.33158]
+(c) Microsoft Corporation. All rights reserved.
+
+ws26-jd\administrator@SERVER1 C:\Users\administrator>powershell
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\administrator> foreach ($DnsServer in @("server1", "server2")) {
+>>     foreach ($Zone in @(
+>>         "WS26-JD.hogent",
+>>         "26.168.192.in-addr.arpa"
+>>     )) {
+>>         Write-Output "===== $DnsServer / $Zone ====="
+>>
+>>         Get-DnsServerResourceRecord `
+>>             -ComputerName $DnsServer `
+>>             -ZoneName $Zone `
+>>             -RRType NS |
+>>             Select-Object HostName,
+>>                 @{Name = "NameServer"; Expression = {
+>>                     $_.RecordData.NameServer
+>>                 }}
+>>     }
+>> }
+===== server1 / WS26-JD.hogent =====
+
+HostName NameServer
+-------- ----------
+@        server1.ws26-jd.hogent.
+@        server2.WS26-JD.hogent.
+_msdcs   server1.ws26-jd.hogent.
+===== server1 / 26.168.192.in-addr.arpa =====
+@        server2.WS26-JD.hogent.
+@        server1.ws26-jd.hogent.
+===== server2 / WS26-JD.hogent =====
+@        server1.ws26-jd.hogent.
+@        server2.ws26-jd.hogent.
+_msdcs   server1.ws26-jd.hogent.
+===== server2 / 26.168.192.in-addr.arpa =====
+@        server2.WS26-JD.hogent.
+@        server1.ws26-jd.hogent.
+
+
+PS C:\Users\administrator> foreach ($DnsServer in @("server1", "server2")) {
+>>     Write-Output "===== A-records op $DnsServer ====="
+>>
+>>     Get-DnsServerResourceRecord `
+>>         -ComputerName $DnsServer `
+>>         -ZoneName "WS26-JD.hogent" `
+>>         -RRType A |
+>>         Select-Object HostName,
+>>             @{Name = "IPv4"; Expression = {
+>>                 $_.RecordData.IPv4Address.ToString()
+>>             }}
+>>
+>>     Write-Output "===== PTR-records op $DnsServer ====="
+>>
+>>     Get-DnsServerResourceRecord `
+>>         -ComputerName $DnsServer `
+>>         -ZoneName "26.168.192.in-addr.arpa" `
+>>         -RRType PTR |
+>>         Select-Object HostName,
+>>             @{Name = "Target"; Expression = {
+>>                 $_.RecordData.PtrDomainName
+>>             }}
+>> }
+===== A-records op server1 =====
+
+HostName       IPv4
+--------       ----
+@              192.168.26.10
+DomainDnsZones 192.168.26.10
+ForestDnsZones 192.168.26.10
+intranet       192.168.26.10
+server1        192.168.26.10
+server2        192.168.26.20
+server3        192.168.26.30
+===== PTR-records op server1 =====
+10
+20
+30
+===== A-records op server2 =====
+@              192.168.26.10
+DomainDnsZones 192.168.26.10
+ForestDnsZones 192.168.26.10
+intranet       192.168.26.10
+server1        192.168.26.10
+server2        192.168.26.20
+server3        192.168.26.30
+===== PTR-records op server2 =====
+10
+20
+30
+
+
+PS C:\Users\administrator> & {
+>>     $ErrorActionPreference = "Stop"
+>>
+>>     $Zone = "WS26-JD.hogent"
+>>     $Name = "ws2-demo-transfer"
+>>     $Target = "server1.WS26-JD.hogent."
+>>     $Created = $false
+>>
+>>     foreach ($DnsServer in @("server1", "server2")) {
+>>         $Existing = @(
+>>             Get-DnsServerResourceRecord `
+>>                 -ComputerName $DnsServer `
+>>                 -ZoneName $Zone `
+>>                 -ErrorAction Stop |
+>>                 Where-Object HostName -eq $Name
+>>         )
+>>
+>>         if ($Existing.Count -gt 0) {
+>>             throw "Testnaam bestaat al op $DnsServer. Niet overschrijven."
+>>         }
+>>     }
+>>
+>>     try {
+>>         Add-DnsServerResourceRecordCName `
+>>             -ComputerName server1 `
+>>             -ZoneName $Zone `
+>>             -Name $Name `
+>>             -HostNameAlias $Target `
+>>             -ErrorAction Stop
+>>
+>>         $Created = $true
+>>         $Deadline = (Get-Date).AddSeconds(90)
+>>         $Replicated = @()
+>>
+>>         do {
+>>             $Replicated = @(
+>>                 Get-DnsServerResourceRecord `
+>>                     -ComputerName server2 `
+>>                     -ZoneName $Zone `
+>>                     -ErrorAction Stop |
+>>                     Where-Object {
+>>                         $_.HostName -eq $Name -and
+>>                         $_.RecordType -eq "CNAME"
+>>                     }
+>>             )
+>>
+>>             if ($Replicated.Count -eq 1) {
+>>                 break
+>>             }
+>>
+>>             Start-Sleep -Seconds 2
+>>         }
+>>         while ((Get-Date) -lt $Deadline)
+>>
+>>         if (
+>>             $Replicated.Count -ne 1 -or
+>>             $Replicated.RecordData.HostNameAlias.TrimEnd(".") -ine
+>>                 $Target.TrimEnd(".")
+>>         ) {
+>>             throw "Automatische overname niet binnen 90 seconden bevestigd."
+>>         }
+>>
+>>         Write-Output "PASS: CNAME automatisch zichtbaar op server2."
+>>
+>>         Resolve-DnsName `
+>>             -Name "$Name.$Zone" `
+>>             -Type CNAME `
+>>             -Server "192.168.26.20" `
+>>             -DnsOnly `
+>>             -ErrorAction Stop                                                       >>     }                                                                               >>     finally {                                                                       >>         if ($Created) {                                                             >>             Remove-DnsServerResourceRecord `
+>>                 -ComputerName server1 `
+>>                 -ZoneName $Zone `
+>>                 -Name $Name `
+>>                 -RRType CNAME `
+>>                 -Force `
+>>                 -ErrorAction Stop
+>>         }
+>>     }
+>>
+>>     $Deadline = (Get-Date).AddSeconds(90)
+>>
+>>     do {
+>>         $Remaining = @(
+>>             Get-DnsServerResourceRecord `
+>>                 -ComputerName server2 `
+>>                 -ZoneName $Zone `
+>>                 -ErrorAction Stop |
+>>                 Where-Object HostName -eq $Name
+>>         )
+>>
+>>         if ($Remaining.Count -eq 0) {
+>>             break
+>>         }
+>>
+>>         Start-Sleep -Seconds 2
+>>     }
+>>     while ((Get-Date) -lt $Deadline)
+>>
+>>     if ($Remaining.Count -gt 0) {
+>>         throw "Verwijdering nog niet overgenomen op server2."
+>>     }
+>>
+>>     Write-Output "PASS: verwijdering automatisch overgenomen op server2."
+>> }
+PASS: CNAME automatisch zichtbaar op server2.
+
+Name                           Type   TTL   Section    NameHost
+----                           ----   ---   -------    --------
+ws2-demo-transfer.WS26-JD.hoge CNAME  3600  Answer     server1.WS26-JD.hogent
+nt
+PASS: verwijdering automatisch overgenomen op server2.
+
+
+PS C:\Users\administrator>
+PS C:\Users\administrator> Import-Module GroupPolicy
+PS C:\Users\administrator> Import-Module ActiveDirectory
+PS C:\Users\administrator>
+PS C:\Users\administrator> $GpoName = "WS26 - Vertrouw Root CA"
+PS C:\Users\administrator>
+PS C:\Users\administrator> $Gpos = @(
+>>     Get-GPO -All |
+>>         Where-Object DisplayName -eq $GpoName
+>> )
+PS C:\Users\administrator>
+PS C:\Users\administrator> $Gpos |
+>>     Select-Object DisplayName, Id, GpoStatus
+
+DisplayName             Id                                            GpoStatus
+-----------             --                                            ---------
+WS26 - Vertrouw Root CA a2d2ca7a-89af-4c35-bf4e-e4d564287906 AllSettingsEnabled
+
+
+PS C:\Users\administrator>
+PS C:\Users\administrator> $Target = (Get-ADDomain).DistinguishedName
+PS C:\Users\administrator>
+PS C:\Users\administrator> (Get-GPInheritance -Target $Target).GpoLinks |
+>>     Select-Object DisplayName, GpoId, Enabled, Enforced
+
+DisplayName             GpoId                                Enabled Enforced
+-----------             -----                                ------- --------
+Default Domain Policy   31b2f340-016d-11d2-945f-00c04fb984f9    True    False
+WS26 - Vertrouw Root CA a2d2ca7a-89af-4c35-bf4e-e4d564287906    True    False
+
+
+PS C:\Users\administrator> if ($Gpos.Count -ne 1) {
+>>     throw "Verwacht precies één CA-trust-GPO."
+>> }
+PS C:\Users\administrator>
+PS C:\Users\administrator> Get-GPRegistryValue `
+>>     -Guid $Gpos.Id `[0]
+Get-GPRegistryValue : A positional parameter cannot be found that accepts argument
+'[0]'.
+At line:1 char:1
++ Get-GPRegistryValue `
++ ~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidArgument: (:) [Get-GPRegistryValue], ParameterBi
+   ndingException
+    + FullyQualifiedErrorId : PositionalParameterNotFound,Microsoft.GroupPolicy.Comma
+   nds.GetGPRegistryValueCommand
+
+PS C:\Users\administrator>     -Key "HKLM\Software\Policies\Microsoft\SystemCertificates\Root\Certificates"
+-Key : The term '-Key' is not recognized as the name of a cmdlet, function, script
+file, or operable program. Check the spelling of the name, or if a path was included,
+verify that the path is correct and try again.
+At line:1 char:5
++     -Key "HKLM\Software\Policies\Microsoft\SystemCertificates\Root\Ce ...
++     ~~~~
+    + CategoryInfo          : ObjectNotFound: (-Key:String) [], CommandNotFoundExcept
+   ion
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+PS C:\Users\administrator> & {
+>>     $ErrorActionPreference = "Stop"
+>>
+>>     Import-Module GroupPolicy -ErrorAction Stop
+>>
+>>     $Gpos = @(
+>>         Get-GPO -All |
+>>             Where-Object DisplayName -eq "WS26 - Vertrouw Root CA"
+>>     )
+>>
+>>     if ($Gpos.Count -ne 1) {
+>>         throw "Verwacht precies één CA-trust-GPO."
+>>     }
+>>
+>>     $Parameters = @{
+>>         Guid        = $Gpos[0].Id
+>>         Key         = "HKLM\Software\Policies\Microsoft\SystemCertificates\Root\Certificates"
+>>         ErrorAction = "Stop"
+>>     }
+>>
+>>     Get-GPRegistryValue @Parameters
+>> }
+
+
+KeyPath     : Software\Policies\Microsoft\SystemCertificates\Root\Certificates\344944D
+              E76805C57B48E01B14E7000C84ABCD7FA
+FullKeyPath : HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\SystemCertificates\Root\C
+              ertificates\344944DE76805C57B48E01B14E7000C84ABCD7FA
+Hive        : LocalMachine
+
+
+
+PS C:\Users\administrator> & {
+>>     $ErrorActionPreference = "Stop"
+>>
+>>     $TempCertificate = Join-Path $env:TEMP (
+>>         "WS2-TrustTest-" + [guid]::NewGuid().ToString("N") + ".cer"
+>>     )
+>>
+>>     $ExpectedCertificate = $null
+>>
+>>     try {
+>>         $CertutilArguments = @(
+>>             "-f"
+>>             "-config"
+>>             "server3.WS26-JD.hogent\WS26-JD-Root-CA"
+>>             "-ca.cert"
+>>             $TempCertificate
+>>         )
+>>
+>>         & certutil.exe @CertutilArguments
+>>
+>>         if ($LASTEXITCODE -ne 0) {
+>>             throw "Ophalen van het actuele CA-certificaat mislukt."
+>>         }
+>>
+>>         $ExpectedCertificate =
+>>             [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
+>>                 $TempCertificate
+>>             )
+>>
+>>         $Thumbprint = $ExpectedCertificate.Thumbprint
+>>
+>>         $Trusted = Get-Item `
+>>             -LiteralPath "Cert:\LocalMachine\Root\$Thumbprint" `
+>>             -ErrorAction Stop
+>>
+>>         $Now = Get-Date
+>>
+>>         if (
+>>             $Trusted.NotBefore -gt $Now -or
+>>             $Trusted.NotAfter -le $Now
+>>         ) {
+>>             throw "Het vertrouwde rootcertificaat is niet geldig op de testdatum."
+>>         }
+>>
+>>         $PolicyPath =
+>>             "HKLM:\SOFTWARE\Policies\Microsoft\SystemCertificates\" +
+>>             "Root\Certificates\$Thumbprint"
+>>
+>>         $Policy = Get-ItemProperty `
+>>             -LiteralPath $PolicyPath `
+>>             -Name Blob `
+>>             -ErrorAction Stop
+>>
+>>         if (@($Policy.Blob).Count -eq 0) {
+>>             throw "Lege certificaatblob in de beleidsopslag."
+>>         }
+>>
+>>         [PSCustomObject]@{
+>>             Computer                 = $env:COMPUTERNAME
+>>             Thumbprint               = $Thumbprint
+>>             TrustedRootPresent       = $true
+>>             PolicyCertificatePresent = $true
+>>         } | Format-List
+>>     }
+>>     finally {
+>>         if ($null -ne $ExpectedCertificate) {
+>>             $ExpectedCertificate.Dispose()
+>>         }
+>>
+>>         if (Test-Path -LiteralPath $TempCertificate) {
+>>             Remove-Item `
+>>                 -LiteralPath $TempCertificate `
+>>                 -Force `
+>>                 -ErrorAction Stop
+>>         }
+>>     }
+>> }
+CA cert[0]: 3 -- Valid
+CA cert[0]:
+-----BEGIN CERTIFICATE-----
+MIIDcTCCAlmgAwIBAgIQNoEFPNQSP69NtudvhH1BIzANBgkqhkiG9w0BAQsFADBL
+MRYwFAYKCZImiZPyLGQBGRYGaG9nZW50MRcwFQYKCZImiZPyLGQBGRYHV1MyNi1K
+RDEYMBYGA1UEAxMPV1MyNi1KRC1Sb290LUNBMB4XDTI2MTEwMTExMjUwMFoXDTMx
+MTEwMTExMzQ1OVowSzEWMBQGCgmSJomT8ixkARkWBmhvZ2VudDEXMBUGCgmSJomT
+8ixkARkWB1dTMjYtSkQxGDAWBgNVBAMTD1dTMjYtSkQtUm9vdC1DQTCCASIwDQYJ
+KoZIhvcNAQEBBQADggEPADCCAQoCggEBAMLDHjaclqJxRwWoEWlv1lbmu5fF8oSF
+EqnAl1A8B7jDaSyTGFLMsz64XiyePEfrz91ngxpnjAHpN431p+ynD+hQsm1TMaw/
+YctZzo7u7LzSYhS+6/1bvS7tJYct4geVcctoct8fZB5bKtp1RPmFMTOVWQJW4PI0
+5o+NFQXcor+6162pCLE67s4souVJSf1CGGxo5gApwks05B5XCH4UlLMIogPwT+Wm
+pOLC1GlRTqOlxJAU9eg5CWVTfItlQhksuw1Mznuk9tNxcl2tg7KaRM7CgQjUFFON
+8D8N3huQn3j6CTi2hnvuZAoBUpjMz331NjcmN/+bXXYjnW629fym86ECAwEAAaNR
+ME8wCwYDVR0PBAQDAgGGMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFEqUmYlu
+tCJY9TFURuATy2DtfJ6dMBAGCSsGAQQBgjcVAQQDAgEAMA0GCSqGSIb3DQEBCwUA
+A4IBAQBG0FqeE5fohwwKmZLlTquBMAquYs6+3xjBZJPOGskAC6OYMQkl3iAU/Uyq
+fSjKjGdy5K/QR2ONDKM3xDcx7Eiwvf1MYUfzgQoHG07D4rR+SiZ11jDdS3K+cSh7
+D4Enyu7dkKFf3HUaxCPK56TLSwxllt1Y+gWrvD/Z+a3WQR1Hf1lBPKWxU4MVswDG
+ApJOLTFiEJsnKRARVeQP82mN5VxQiPeIoHwKslRMsshQMpfzrVdKgp6uDwcv2wKP
+WMJTTM3lvbAugzpKTRTVY9ucBUWEtFYQNCEQQOPLfzuv4BgIquD/+FISm3oYQbrj
+0K0X3TgNkN8cHx5RQYRNvRhaFEiI
+-----END CERTIFICATE-----
+
+CertUtil: -ca.cert command completed successfully.
+
+
+Computer                 : SERVER1
+Thumbprint               : 344944DE76805C57B48E01B14E7000C84ABCD7FA
+TrustedRootPresent       : True
+PolicyCertificatePresent : True
+
+
+
+PS C:\Users\administrator> gpresult.exe /scope computer /r
+
+Microsoft (R) Windows (R) Operating System Group Policy Result tool v2.0
+© Microsoft Corporation. All rights reserved.
+
+Created on ‎11/‎4/‎2026 at 9:32:37 AM
+
+
+RSOP data for  on SERVER1 : Logging Mode
+-----------------------------------------
+
+OS Configuration:            Primary Domain Controller
+OS Version:                  10.0.26100
+Site Name:                   Default-First-Site-Name
+Roaming Profile:
+Local Profile:
+Connected over a slow link?: No
+
+
+COMPUTER SETTINGS
+------------------
+    CN=SERVER1,OU=Domain Controllers,DC=WS26-JD,DC=hogent
+    Last time Group Policy was applied: 11/4/2026 at 9:29:18 AM
+    Group Policy was applied from:      server1.WS26-JD.hogent
+    Group Policy slow link threshold:   500 kbps
+    Domain Name:                        WS26-JD
+    Domain Type:                        Windows 2008 or later
+
+    Applied Group Policy Objects
+    -----------------------------
+        Default Domain Controllers Policy
+        Default Domain Policy
+        WS26 - Vertrouw Root CA
+
+    The following GPOs were not applied because they were filtered out
+    -------------------------------------------------------------------
+        Local Group Policy
+            Filtering:  Not Applied (Empty)
+
+    The computer is a part of the following security groups
+    -------------------------------------------------------
+        BUILTIN\Administrators
+        Everyone
+        BUILTIN\Users
+        BUILTIN\Pre-Windows 2000 Compatible Access
+        Windows Authorization Access Group
+        NT AUTHORITY\NETWORK
+        NT AUTHORITY\Authenticated Users
+        This Organization
+        SERVER1$
+        Domain Controllers
+        NT AUTHORITY\ENTERPRISE DOMAIN CONTROLLERS
+        Authentication authority asserted identity
+        Denied RODC Password Replication Group
+        System Mandatory Level
+
+PS C:\Users\administrator> exit
+
+ws26-jd\administrator@SERVER1 C:\Users\administrator>exit
+Connection to 127.0.0.1 closed.
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> vagrant provision server1 --provision-with server1-verify-web-enrollment
+==> server1: Running provisioner: server1-verify-web-enrollment (shell)...
+    server1: Running: scripts/server1/verify-web-enrollment.ps1 as C:\tmp\vagrant-shell.ps1
+    server1: Controle Web Enrollment vanaf server1...
+    server1: HTTP-ingang: http://server3.WS26-JD.hogent/CertSrv/
+    server1: HTTP-redirect: 302 naar https://server3.WS26-JD.hogent/certsrv/Default.asp
+    server1: HTTPS-pagina: HTTP 200
+    server1: Paginatitel: Microsoft Active Directory Certificate Services
+    server1: Web Enrollment is correct bereikbaar via http://server3.WS26-JD.hogent/CertSrv/.
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> ssh -p 2222 `
+>>     -l 'WS26-JD\Administrator' `
+>>     -o PreferredAuthentications=password `
+>>     -o PasswordAuthentication=yes `
+>>     -o PubkeyAuthentication=no `
+>>     127.0.0.1
+WS26-JD\Administrator@127.0.0.1's password:
+Microsoft Windows [Version 10.0.26100.33158]
+(c) Microsoft Corporation. All rights reserved.
+                                                                                       ws26-jd\administrator@SERVER1 C:\Users\administrator>powershell                        Windows PowerShell                                                                     Copyright (C) Microsoft Corporation. All rights reserved.                              
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\administrator> Get-WindowsFeature -Name Web-Server |
+>>     Select-Object Name, InstallState
+
+Name       InstallState
+----       ------------
+Web-Server    Installed
+
+
+PS C:\Users\administrator>
+PS C:\Users\administrator> Get-Service W3SVC |
+>>     Select-Object Name, Status
+
+Name   Status
+----   ------
+W3SVC Running
+
+
+PS C:\Users\administrator>
+PS C:\Users\administrator> Import-Module WebAdministration
+PS C:\Users\administrator>
+PS C:\Users\administrator> Get-Website |
+>>     Select-Object Name, State, PhysicalPath
+
+name             state   physicalPath
+----             -----   ------------
+Default Web Site Started C:\inetpub\wwwroot
+
+
+PS C:\Users\administrator>
+PS C:\Users\administrator> Get-WebBinding -Name "Default Web Site" |
+>>     Select-Object protocol, bindingInformation
+
+protocol bindingInformation
+-------- ------------------
+http     *:80:
+
+
+PS C:\Users\administrator> $Page = Invoke-WebRequest `
+>>     -Uri "http://localhost/default.htm" `
+>>     -UseBasicParsing `
+>>     -TimeoutSec 30 `
+>>     -ErrorAction Stop
+PS C:\Users\administrator>
+PS C:\Users\administrator> [PSCustomObject]@{
+>>     StatusCode = $Page.StatusCode
+>>     HelloWorldFound = ($Page.Content -match "Hello World")
+>> }
+
+StatusCode HelloWorldFound
+---------- ---------------
+       200            True
+
+
+PS C:\Users\administrator> Get-NetConnectionProfile |
+>>     Select-Object InterfaceAlias, NetworkCategory
+
+InterfaceAlias     NetworkCategory
+--------------     ---------------
+Ethernet 2     DomainAuthenticated
+Ethernet       DomainAuthenticated
+
+
+PS C:\Users\administrator>
+PS C:\Users\administrator> Get-NetFirewallProfile -PolicyStore ActiveStore |
+>>     Select-Object Name, Enabled,
+>>         DefaultInboundAction,
+>>         DefaultOutboundAction
+
+Name    Enabled DefaultInboundAction DefaultOutboundAction
+----    ------- -------------------- ---------------------
+Domain     True                Block                 Allow
+Private    True                Block                 Allow
+Public     True                Block                 Allow
+
+
+PS C:\Users\administrator> $Rules = Get-NetFirewallRule -PolicyStore ActiveStore |
+>>     Where-Object {
+>>         $_.Enabled -eq "True" -and
+>>         $_.Direction -eq "Inbound" -and
+>>         $_.Action -eq "Allow"
+>>     }
+PS C:\Users\administrator>
+PS C:\Users\administrator> $Rules |
+>>     Select-Object Name, DisplayName, Profile, PolicyStoreSourceType |
+>>     Sort-Object Name
+
+Name                    DisplayName
+----                    -----------
+ADDS-RPCEPMAP-TCP-In    Active Directory Domain Controller (RPC-EPMAP)
+ADDS-RPC-TCP-In         Active Directory Domain Controller (RPC)
+CoreNet-DHCP-In         Core Networking - Dynamic Host Configuration Protocol (DHCP...
+CoreNet-DHCPV6-In       Core Networking - Dynamic Host Configuration Protocol for I...
+CoreNet-ICMP4-DUFRAG-In Core Networking - Destination Unreachable Fragmentation Nee...
+CoreNet-ICMP6-DU-In     Core Networking - Destination Unreachable (ICMPv6-In)
+CoreNet-ICMP6-LD-In     Core Networking - Multicast Listener Done (ICMPv6-In)
+CoreNet-ICMP6-LQ-In     Core Networking - Multicast Listener Query (ICMPv6-In)
+CoreNet-ICMP6-LR2-In    Core Networking - Multicast Listener Report v2 (ICMPv6-In)
+CoreNet-ICMP6-LR-In     Core Networking - Multicast Listener Report (ICMPv6-In)
+CoreNet-ICMP6-NDA-In    Core Networking - Neighbor Discovery Advertisement (ICMPv6-In)
+CoreNet-ICMP6-NDS-In    Core Networking - Neighbor Discovery Solicitation (ICMPv6-In)
+CoreNet-ICMP6-PP-In     Core Networking - Parameter Problem (ICMPv6-In)
+CoreNet-ICMP6-PTB-In    Core Networking - Packet Too Big (ICMPv6-In)
+CoreNet-ICMP6-RA-In     Core Networking - Router Advertisement (ICMPv6-In)
+CoreNet-ICMP6-RS-In     Core Networking - Router Solicitation (ICMPv6-In)
+CoreNet-ICMP6-TE-In     Core Networking - Time Exceeded (ICMPv6-In)
+DNSSrv-RPCEPMAP-TCP-In  RPC Endpoint Mapper (TCP, Incoming)
+DNSSrv-RPC-TCP-In       RPC (TCP, Incoming)
+WS2-Managed-Ping-Lab    WS2-Managed-Ping-Lab
+WS2-Managed-Server1-TCP WS2-Managed-Server1-TCP
+WS2-Managed-Server1-UDP WS2-Managed-Server1-UDP
+WS2-Managed-SSH-Lab     WS2-Managed-SSH-Lab
+WS2-Managed-SSH-NAT     WS2-Managed-SSH-NAT
+WS2-Managed-WinRM-NAT   WS2-Managed-WinRM-NAT
+
+
+PS C:\Users\administrator> $Rules = Get-NetFirewallRule -PolicyStore ActiveStore |
+>>     Where-Object {
+>>         $_.Enabled -eq "True" -and
+>>         $_.Direction -eq "Inbound" -and
+>>         $_.Action -eq "Allow"
+>>     }
+PS C:\Users\administrator>
+PS C:\Users\administrator> $Overview = foreach ($Rule in $Rules) {
+>>     $Port      = $Rule | Get-NetFirewallPortFilter
+>>     $Address   = $Rule | Get-NetFirewallAddressFilter
+>>     $Interface = $Rule | Get-NetFirewallInterfaceFilter
+>>     $Service   = $Rule | Get-NetFirewallServiceFilter
+>>
+>>     [PSCustomObject]@{
+>>         Name          = $Rule.Name
+>>         Protocol      = $Port.Protocol
+>>         LocalPort     = $Port.LocalPort -join ","
+>>         RemoteAddress = $Address.RemoteAddress -join ","
+>>         Interface     = $Interface.InterfaceAlias -join ","
+>>         Service       = $Service.Service -join ","
+>>     }
+>> }
+PS C:\Users\administrator>
+PS C:\Users\administrator> $Overview | Format-Table -Wrap -AutoSize
+
+Name                    Protocol LocalPort                      RemoteAddress
+----                    -------- ---------                      -------------
+CoreNet-ICMP6-RA-In     ICMPv6   RPC                            fe80::/64
+CoreNet-ICMP4-DUFRAG-In ICMPv4   RPC                            Any
+CoreNet-DHCP-In         UDP      68                             Any
+CoreNet-DHCPV6-In       UDP      546                            Any
+CoreNet-ICMP6-NDS-In    ICMPv6   RPC                            Any
+CoreNet-ICMP6-RS-In     ICMPv6   RPC                            Any
+CoreNet-ICMP6-NDA-In    ICMPv6   RPC                            Any
+CoreNet-ICMP6-PP-In     ICMPv6   RPC                            Any
+CoreNet-ICMP6-PTB-In    ICMPv6   RPC                            Any
+CoreNet-ICMP6-LD-In     ICMPv6   RPC                            LocalSubnet6
+CoreNet-ICMP6-DU-In     ICMPv6   RPC                            Any
+CoreNet-ICMP6-LR2-In    ICMPv6   RPC                            LocalSubnet6
+CoreNet-ICMP6-LQ-In     ICMPv6   RPC                            LocalSubnet6
+CoreNet-ICMP6-LR-In     ICMPv6   RPC                            LocalSubnet6
+CoreNet-ICMP6-TE-In     ICMPv6   RPC                            Any
+ADDS-RPC-TCP-In         TCP      RPC                            192.168.26.0/255.255.2
+                                                                55.0
+ADDS-RPCEPMAP-TCP-In    TCP      RPCEPMap                       192.168.26.0/255.255.2
+                                                                55.0
+DNSSrv-RPC-TCP-In       TCP      RPC                            192.168.26.0/255.255.2
+                                                                55.0
+DNSSrv-RPCEPMAP-TCP-In  TCP      RPCEPMap                       192.168.26.0/255.255.2
+                                                                55.0
+WS2-Managed-WinRM-NAT   TCP      5985                           10.0.2.2
+WS2-Managed-SSH-NAT     TCP      22                             10.0.2.2
+WS2-Managed-SSH-Lab     TCP      22                             192.168.26.0/255.255.2
+                                                                55.0
+WS2-Managed-Ping-Lab    ICMPv4   RPC                            192.168.26.0/255.255.2
+                                                                55.0
+WS2-Managed-Server1-TCP TCP      53,80,88,389,445,464,3268,9389 192.168.26.0/255.255.2
+                                                                55.0
+WS2-Managed-Server1-UDP UDP      53,88,123,389,464              192.168.26.0/255.255.2
+                                                                55.0
+
+
+PS C:\Users\administrator> Get-ChildItem "HKLM:\SOFTWARE\Microsoft\SystemCertificates" |
+>>     Where-Object PSChildName -like "WS2Temp_*" |
+>>     Select-Object PSChildName
+PS C:\Users\administrator>
+
+server2
+PS C:\Users\vagrant> hostname
+server2
+PS C:\Users\vagrant> whoami
+server2\vagrant
+PS C:\Users\vagrant> Get-CimInstance Win32_OperatingSystem |
+>>     Select-Object Caption, Version, BuildNumber
+
+Caption                                           Version    BuildNumber
+-------                                           -------    -----------
+Microsoft Windows Server 2025 Standard Evaluation 10.0.26100 26100
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-ItemProperty `
+>>     "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" |
+>>     Select-Object ProductName, InstallationType
+
+ProductName                             InstallationType
+-----------                             ----------------
+Windows Server 2025 Standard Evaluation Server Core
+
+
+PS C:\Users\vagrant> Get-NetAdapter |
+>>     Select-Object Name, ifIndex, Status, MacAddress
+
+Name       ifIndex Status MacAddress
+----       ------- ------ ----------
+Ethernet 2       7 Up     08-00-27-85-9E-0E
+Ethernet         4 Up     08-00-27-3A-05-5D
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetIPConfiguration
+
+
+InterfaceAlias       : Ethernet
+InterfaceIndex       : 4
+InterfaceDescription : Intel(R) PRO/1000 MT Desktop Adapter
+NetProfile.Name      : Network
+IPv6Address          : fd17:625c:f037:2:907f:ec88:c2b:60e4
+IPv4Address          : 10.0.2.15
+IPv6DefaultGateway   : fe80::2
+IPv4DefaultGateway   : 10.0.2.2
+DNSServer            : fd17:625c:f037:2::3
+                       100.81.163.84
+                       8.8.8.8
+
+InterfaceAlias       : Ethernet 2
+InterfaceIndex       : 7
+InterfaceDescription : Intel(R) PRO/1000 MT Desktop Adapter #2
+NetProfile.Name      : WS26-JD.hogent
+IPv4Address          : 192.168.26.20
+IPv6DefaultGateway   :
+IPv4DefaultGateway   :
+DNSServer            : 192.168.26.10
+
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetIPAddress -AddressFamily IPv4 |
+>>     Select-Object InterfaceAlias, IPAddress, PrefixLength, PrefixOrigin
+
+InterfaceAlias              IPAddress     PrefixLength PrefixOrigin
+--------------              ---------     ------------ ------------
+Ethernet 2                  192.168.26.20           24       Manual
+Ethernet                    10.0.2.15               24         Dhcp
+Loopback Pseudo-Interface 1 127.0.0.1                8    WellKnown
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetRoute -AddressFamily IPv4 -DestinationPrefix "0.0.0.0/0" |
+>>     Select-Object InterfaceAlias, NextHop, RouteMetric                                                                                                                     InterfaceAlias NextHop  RouteMetric                                                    -------------- -------  -----------                                                    Ethernet       10.0.2.2           0
+
+
+PS C:\Users\vagrant> Get-DnsClientServerAddress -AddressFamily IPv4 |
+>>     Select-Object InterfaceAlias, ServerAddresses
+
+InterfaceAlias              ServerAddresses
+--------------              ---------------
+Ethernet                    {100.81.163.84, 8.8.8.8}
+Ethernet 2                  {192.168.26.10}
+Loopback Pseudo-Interface 1 {}
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> $ActiveIndexes = @(
+>>     Get-NetAdapter |
+>>         Where-Object Status -eq "Up" |
+>>         Select-Object -ExpandProperty ifIndex
+>> )
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-DnsClient |
+>>     Where-Object { $_.InterfaceIndex -in $ActiveIndexes } |
+>>     Select-Object InterfaceAlias,
+>>         RegisterThisConnectionsAddress,
+>>         UseSuffixWhenRegistering
+
+InterfaceAlias RegisterThisConnectionsAddress UseSuffixWhenRegistering
+-------------- ------------------------------ ------------------------
+Ethernet                                False                    False
+Ethernet 2                               True                    False
+
+
+PS C:\Users\vagrant> Get-CimInstance Win32_ComputerSystem |
+>>     Select-Object Name, Domain, PartOfDomain, DomainRole
+
+Name    Domain         PartOfDomain DomainRole
+----    ------         ------------ ----------
+SERVER2 WS26-JD.hogent         True          3
+
+
+PS C:\Users\vagrant> Test-ComputerSecureChannel -Verbose
+VERBOSE: Performing the operation "Test-ComputerSecureChannel" on target "SERVER2".
+True
+VERBOSE: The secure channel between the local computer and the domain WS26-JD.hogent
+is in good condition.
+PS C:\Users\vagrant> Get-WindowsFeature -Name AD-Domain-Services, DNS |
+>>     Select-Object Name, InstallState
+
+Name               InstallState
+----               ------------
+AD-Domain-Services    Available
+DNS                   Installed
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-Service -Name DNS |
+>>     Select-Object Name, Status
+
+Name  Status
+----  ------
+DNS  Running
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-DnsServerZone |
+>>     Select-Object ZoneName, ZoneType, IsDsIntegrated, MasterServers
+
+ZoneName                ZoneType  IsDsIntegrated MasterServers
+--------                --------  -------------- -------------
+_msdcs.WS26-JD.hogent   Secondary          False 192.168.26.10
+0.in-addr.arpa          Primary            False
+127.in-addr.arpa        Primary            False
+255.in-addr.arpa        Primary            False
+26.168.192.in-addr.arpa Secondary          False 192.168.26.10
+WS26-JD.hogent          Secondary          False 192.168.26.10
+
+
+PS C:\Users\vagrant> & {
+>>     $ErrorActionPreference = "Stop"
+>>
+>>     $TempCertificate = Join-Path $env:TEMP (
+>>         "WS2-TrustTest-" + [guid]::NewGuid().ToString("N") + ".cer"
+>>     )
+>>
+>>     $ExpectedCertificate = $null
+>>
+>>     try {
+>>         $CertutilArguments = @(
+>>             "-f"
+>>             "-config"
+>>             "server3.WS26-JD.hogent\WS26-JD-Root-CA"
+>>             "-ca.cert"
+>>             $TempCertificate
+>>         )
+>>
+>>         & certutil.exe @CertutilArguments
+>>
+>>         if ($LASTEXITCODE -ne 0) {
+>>             throw "Ophalen van het actuele CA-certificaat mislukt."
+>>         }
+>>
+>>         $ExpectedCertificate =
+>>             [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
+>>                 $TempCertificate
+>>             )
+>>
+>>         $Thumbprint = $ExpectedCertificate.Thumbprint
+>>
+>>         $Trusted = Get-Item `
+>>             -LiteralPath "Cert:\LocalMachine\Root\$Thumbprint" `
+>>             -ErrorAction Stop
+>>
+>>         $Now = Get-Date
+>>
+>>         if (
+>>             $Trusted.NotBefore -gt $Now -or
+>>             $Trusted.NotAfter -le $Now
+>>         ) {
+>>             throw "Het vertrouwde rootcertificaat is niet geldig op de testdatum."
+>>         }
+>>
+>>         $PolicyPath =
+>>             "HKLM:\SOFTWARE\Policies\Microsoft\SystemCertificates\" +
+>>             "Root\Certificates\$Thumbprint"
+>>
+>>         $Policy = Get-ItemProperty `
+>>             -LiteralPath $PolicyPath `
+>>             -Name Blob `
+>>             -ErrorAction Stop
+>>
+>>         if (@($Policy.Blob).Count -eq 0) {
+>>             throw "Lege certificaatblob in de beleidsopslag."
+>>         }
+>>
+>>         [PSCustomObject]@{
+>>             Computer                 = $env:COMPUTERNAME
+>>             Thumbprint               = $Thumbprint
+>>             TrustedRootPresent       = $true
+>>             PolicyCertificatePresent = $true
+>>         } | Format-List
+>>     }
+>>     finally {
+>>         if ($null -ne $ExpectedCertificate) {
+>>             $ExpectedCertificate.Dispose()
+>>         }
+>>
+>>         if (Test-Path -LiteralPath $TempCertificate) {
+>>             Remove-Item `
+>>                 -LiteralPath $TempCertificate `
+>>                 -Force `
+>>                 -ErrorAction Stop
+>>         }
+>>     }
+>> }
+CertUtil: -ca.cert command FAILED: 0x800706ba (WIN32: 1722 RPC_S_SERVER_UNAVAILABLE)
+CertUtil: The RPC server is unavailable.
+Ophalen van het actuele CA-certificaat mislukt.
+At line:22 char:13
++             throw "Ophalen van het actuele CA-certificaat mislukt."
++             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Ophalen van het...ficaat mislukt.:St
+   ring) [], RuntimeException
+    + FullyQualifiedErrorId : Ophalen van het actuele CA-certificaat mislukt.
+
+PS C:\Users\vagrant> gpresult.exe /scope computer /r
+
+Microsoft (R) Windows (R) Operating System Group Policy Result tool v2.0
+© Microsoft Corporation. All rights reserved.
+
+Created on ‎11/‎4/‎2026 at 9:32:39 AM
+
+
+RSOP data for  on SERVER2 : Logging Mode
+-----------------------------------------
+
+OS Configuration:            Member Server
+OS Version:                  10.0.26100
+Site Name:                   Default-First-Site-Name
+Roaming Profile:
+Local Profile:
+Connected over a slow link?: No
+
+
+COMPUTER SETTINGS
+------------------
+
+    Last time Group Policy was applied: 11/4/2026 at 8:47:05 AM
+    Group Policy was applied from:      server1.WS26-JD.hogent
+    Group Policy slow link threshold:   500 kbps
+    Domain Name:                        WS26-JD
+    Domain Type:                        Windows 2008 or later
+
+    Applied Group Policy Objects
+    -----------------------------
+        Default Domain Policy
+        WS26 - Vertrouw Root CA
+
+    The following GPOs were not applied because they were filtered out
+    -------------------------------------------------------------------
+        Local Group Policy
+            Filtering:  Not Applied (Empty)
+
+    The computer is a part of the following security groups
+    -------------------------------------------------------
+        BUILTIN\Administrators
+        Everyone
+        BUILTIN\Users
+        NT AUTHORITY\NETWORK
+        NT AUTHORITY\Authenticated Users
+        This Organization
+        SERVER2$
+        Domain Computers
+        Authentication authority asserted identity
+        System Mandatory Level
+
+PS C:\Users\vagrant> Get-NetConnectionProfile |
+>>     Select-Object InterfaceAlias, NetworkCategory
+
+InterfaceAlias     NetworkCategory
+--------------     ---------------
+Ethernet 2     DomainAuthenticated
+Ethernet                    Public
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetFirewallProfile -PolicyStore ActiveStore |
+>>     Select-Object Name, Enabled,
+>>         DefaultInboundAction,
+>>         DefaultOutboundAction
+
+Name    Enabled DefaultInboundAction DefaultOutboundAction
+----    ------- -------------------- ---------------------
+Domain     True                Block                 Allow
+Private    True                Block                 Allow
+Public     True                Block                 Allow
+
+
+PS C:\Users\vagrant> $Rules = Get-NetFirewallRule -PolicyStore ActiveStore |
+>>     Where-Object {
+>>         $_.Enabled -eq "True" -and
+>>         $_.Direction -eq "Inbound" -and
+>>         $_.Action -eq "Allow"
+>>     }
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> $Rules |
+>>     Select-Object Name, DisplayName, Profile, PolicyStoreSourceType |
+>>     Sort-Object Name
+
+Name                        DisplayName
+----                        -----------
+CoreNet-DHCP-In             Core Networking - Dynamic Host Configuration Protocol (...
+CoreNet-DHCPV6-In           Core Networking - Dynamic Host Configuration Protocol f...
+CoreNet-ICMP4-DUFRAG-In     Core Networking - Destination Unreachable Fragmentation...
+CoreNet-ICMP6-DU-In         Core Networking - Destination Unreachable (ICMPv6-In)
+CoreNet-ICMP6-LD-In         Core Networking - Multicast Listener Done (ICMPv6-In)
+CoreNet-ICMP6-LQ-In         Core Networking - Multicast Listener Query (ICMPv6-In)
+CoreNet-ICMP6-LR2-In        Core Networking - Multicast Listener Report v2 (ICMPv6-In)
+CoreNet-ICMP6-LR-In         Core Networking - Multicast Listener Report (ICMPv6-In)
+CoreNet-ICMP6-NDA-In        Core Networking - Neighbor Discovery Advertisement (ICM...
+CoreNet-ICMP6-NDS-In        Core Networking - Neighbor Discovery Solicitation (ICMP...
+CoreNet-ICMP6-PP-In         Core Networking - Parameter Problem (ICMPv6-In)
+CoreNet-ICMP6-PTB-In        Core Networking - Packet Too Big (ICMPv6-In)
+CoreNet-ICMP6-RA-In         Core Networking - Router Advertisement (ICMPv6-In)
+CoreNet-ICMP6-RS-In         Core Networking - Router Solicitation (ICMPv6-In)
+CoreNet-ICMP6-TE-In         Core Networking - Time Exceeded (ICMPv6-In)
+DNSSrv-RPCEPMAP-TCP-In      RPC Endpoint Mapper (TCP, Incoming)
+DNSSrv-RPC-TCP-In           RPC (TCP, Incoming)
+WS2-Managed-Ping-Lab        WS2-Managed-Ping-Lab
+WS2-Managed-Server2-DNS-TCP WS2-Managed-Server2-DNS-TCP
+WS2-Managed-Server2-DNS-UDP WS2-Managed-Server2-DNS-UDP
+WS2-Managed-SSH-Lab         WS2-Managed-SSH-Lab
+WS2-Managed-SSH-NAT         WS2-Managed-SSH-NAT
+WS2-Managed-WinRM-NAT       WS2-Managed-WinRM-NAT
+
+
+PS C:\Users\vagrant> $Rules = Get-NetFirewallRule -PolicyStore ActiveStore |
+>>     Where-Object {
+>>         $_.Enabled -eq "True" -and
+>>         $_.Direction -eq "Inbound" -and
+>>         $_.Action -eq "Allow"
+>>     }
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> $Overview = foreach ($Rule in $Rules) {
+>>     $Port      = $Rule | Get-NetFirewallPortFilter
+>>     $Address   = $Rule | Get-NetFirewallAddressFilter
+>>     $Interface = $Rule | Get-NetFirewallInterfaceFilter
+>>     $Service   = $Rule | Get-NetFirewallServiceFilter
+>>
+>>     [PSCustomObject]@{
+>>         Name          = $Rule.Name
+>>         Protocol      = $Port.Protocol
+>>         LocalPort     = $Port.LocalPort -join ","
+>>         RemoteAddress = $Address.RemoteAddress -join ","
+>>         Interface     = $Interface.InterfaceAlias -join ","
+>>         Service       = $Service.Service -join ","
+>>     }
+>> }
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> $Overview | Format-Table -Wrap -AutoSize
+
+Name                        Protocol LocalPort RemoteAddress              Interface  S
+                                                                                     e
+                                                                                     r
+                                                                                     v
+                                                                                     i
+                                                                                     c
+                                                                                     e
+----                        -------- --------- -------------              ---------  -
+CoreNet-ICMP6-RA-In         ICMPv6   RPC       fe80::/64                  Any        A
+                                                                                     n
+                                                                                     y
+CoreNet-ICMP4-DUFRAG-In     ICMPv4   RPC       Any                        Any        A
+                                                                                     n
+                                                                                     y
+CoreNet-DHCP-In             UDP      68        Any                        Any        d
+                                                                                     h
+                                                                                     c
+                                                                                     p
+CoreNet-DHCPV6-In           UDP      546       Any                        Any        d
+                                                                                     h
+                                                                                     c
+                                                                                     p
+CoreNet-ICMP6-NDS-In        ICMPv6   RPC       Any                        Any        A
+                                                                                     n
+                                                                                     y
+CoreNet-ICMP6-RS-In         ICMPv6   RPC       Any                        Any        A
+                                                                                     n
+                                                                                     y
+CoreNet-ICMP6-NDA-In        ICMPv6   RPC       Any                        Any        A
+                                                                                     n
+                                                                                     y
+CoreNet-ICMP6-PP-In         ICMPv6   RPC       Any                        Any        A
+                                                                                     n
+                                                                                     y
+CoreNet-ICMP6-PTB-In        ICMPv6   RPC       Any                        Any        A
+                                                                                     n
+                                                                                     y
+CoreNet-ICMP6-LD-In         ICMPv6   RPC       LocalSubnet6               Any        A
+                                                                                     n
+                                                                                     y
+CoreNet-ICMP6-DU-In         ICMPv6   RPC       Any                        Any        A
+                                                                                     n
+                                                                                     y
+CoreNet-ICMP6-LR2-In        ICMPv6   RPC       LocalSubnet6               Any        A
+                                                                                     n
+                                                                                     y
+CoreNet-ICMP6-LQ-In         ICMPv6   RPC       LocalSubnet6               Any        A
+                                                                                     n
+                                                                                     y
+CoreNet-ICMP6-LR-In         ICMPv6   RPC       LocalSubnet6               Any        A
+                                                                                     n
+                                                                                     y
+CoreNet-ICMP6-TE-In         ICMPv6   RPC       Any                        Any        A
+                                                                                     n
+                                                                                     y
+DNSSrv-RPC-TCP-In           TCP      RPC       192.168.26.0/255.255.255.0 Ethernet 2 d
+                                                                                     n
+                                                                                     s
+DNSSrv-RPCEPMAP-TCP-In      TCP      RPCEPMap  192.168.26.0/255.255.255.0 Ethernet 2 r
+                                                                                     p
+                                                                                     c
+                                                                                     s
+                                                                                     s
+WS2-Managed-WinRM-NAT       TCP      5985      10.0.2.2                   Ethernet   A
+                                                                                     n
+                                                                                     y
+WS2-Managed-SSH-NAT         TCP      22        10.0.2.2                   Ethernet   A
+                                                                                     n
+                                                                                     y
+WS2-Managed-SSH-Lab         TCP      22        192.168.26.0/255.255.255.0 Ethernet 2 A
+                                                                                     n
+                                                                                     y
+WS2-Managed-Ping-Lab        ICMPv4   RPC       192.168.26.0/255.255.255.0 Ethernet 2 A
+                                                                                     n
+                                                                                     y
+WS2-Managed-Server2-DNS-TCP TCP      53        192.168.26.0/255.255.255.0 Ethernet 2 D
+                                                                                     N
+                                                                                     S
+WS2-Managed-Server2-DNS-UDP UDP      53        192.168.26.0/255.255.255.0 Ethernet 2 D
+                                                                                     N
+                                                                                     S
+
+
+PS C:\Users\vagrant>
+
+PS C:\Users\vagrant> hostname
+server3
+PS C:\Users\vagrant> whoami
+server3\vagrant
+PS C:\Users\vagrant> Get-CimInstance Win32_OperatingSystem |
+>>     Select-Object Caption, Version, BuildNumber
+
+Caption                                           Version    BuildNumber
+-------                                           -------    -----------
+Microsoft Windows Server 2025 Standard Evaluation 10.0.26100 26100
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-ItemProperty `
+>>     "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" |
+>>     Select-Object ProductName, InstallationType
+
+ProductName                             InstallationType
+-----------                             ----------------
+Windows Server 2025 Standard Evaluation Server Core
+
+
+PS C:\Users\vagrant> Get-NetAdapter |
+>>     Select-Object Name, ifIndex, Status, MacAddress
+
+Name       ifIndex Status MacAddress
+----       ------- ------ ----------
+Ethernet 2       7 Up     08-00-27-8E-2F-E3
+Ethernet         5 Up     08-00-27-3A-05-5D
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetIPConfiguration
+
+
+InterfaceAlias       : Ethernet
+InterfaceIndex       : 5
+InterfaceDescription : Intel(R) PRO/1000 MT Desktop Adapter
+NetProfile.Name      : Network
+IPv6Address          : fd17:625c:f037:2:907f:ec88:c2b:60e4
+IPv4Address          : 10.0.2.15
+IPv6DefaultGateway   : fe80::2
+IPv4DefaultGateway   : 10.0.2.2
+DNSServer            : fd17:625c:f037:2::3
+                       100.81.163.84
+                       8.8.8.8
+
+InterfaceAlias       : Ethernet 2
+InterfaceIndex       : 7
+InterfaceDescription : Intel(R) PRO/1000 MT Desktop Adapter #2
+NetProfile.Name      : WS26-JD.hogent
+IPv4Address          : 192.168.26.30
+IPv6DefaultGateway   :
+IPv4DefaultGateway   :
+DNSServer            : 192.168.26.10
+                       192.168.26.20
+
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetIPAddress -AddressFamily IPv4 |
+>>     Select-Object InterfaceAlias, IPAddress, PrefixLength, PrefixOrigin
+
+InterfaceAlias              IPAddress     PrefixLength PrefixOrigin
+--------------              ---------     ------------ ------------
+Ethernet 2                  192.168.26.30           24       Manual
+Ethernet                    10.0.2.15               24         Dhcp
+Loopback Pseudo-Interface 1 127.0.0.1                8    WellKnown
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetRoute -AddressFamily IPv4 -DestinationPrefix "0.0.0.0/0" |
+>>     Select-Object InterfaceAlias, NextHop, RouteMetric
+
+InterfaceAlias NextHop  RouteMetric
+-------------- -------  -----------
+Ethernet       10.0.2.2           0
+
+
+PS C:\Users\vagrant> Get-DnsClientServerAddress -AddressFamily IPv4 |
+>>     Select-Object InterfaceAlias, ServerAddresses
+
+InterfaceAlias              ServerAddresses
+--------------              ---------------
+Ethernet                    {100.81.163.84, 8.8.8.8}
+Ethernet 2                  {192.168.26.10, 192.168.26.20}
+Loopback Pseudo-Interface 1 {}
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> $ActiveIndexes = @(
+>>     Get-NetAdapter |
+>>         Where-Object Status -eq "Up" |
+>>         Select-Object -ExpandProperty ifIndex
+>> )
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-DnsClient |
+>>     Where-Object { $_.InterfaceIndex -in $ActiveIndexes } |
+>>     Select-Object InterfaceAlias,
+>>         RegisterThisConnectionsAddress,
+>>         UseSuffixWhenRegistering
+
+InterfaceAlias RegisterThisConnectionsAddress UseSuffixWhenRegistering
+-------------- ------------------------------ ------------------------
+Ethernet                                False                    False
+Ethernet 2                               True                    False
+
+
+PS C:\Users\vagrant> Get-CimInstance Win32_ComputerSystem |
+>>     Select-Object Name, Domain, PartOfDomain, DomainRole
+
+Name    Domain         PartOfDomain DomainRole
+----    ------         ------------ ----------
+SERVER3 WS26-JD.hogent         True          3
+
+
+PS C:\Users\vagrant> Test-ComputerSecureChannel -Verbose
+VERBOSE: Performing the operation "Test-ComputerSecureChannel" on target "SERVER3".
+True
+VERBOSE: The secure channel between the local computer and the domain WS26-JD.hogent
+is in good condition.
+PS C:\Users\vagrant> exit
+
+vagrant@SERVER3 C:\Users\vagrant>exit
+PS C:\Users\nmlfo\OneDrive\HoGent\TI3\Windows Server II\GITHUB\Windows-Server-II-portofolio> ssh -p 2207 `
+>>     -l 'WS26-JD\Administrator' `
+>>     -o PreferredAuthentications=password `
+>>     -o PasswordAuthentication=yes `
+>>     -o PubkeyAuthentication=no `
+>>     127.0.0.1
+WS26-JD\Administrator@127.0.0.1's password:
+Microsoft Windows [Version 10.0.26100.33158]
+(c) Microsoft Corporation. All rights reserved.
+                                                                                       ws26-jd\administrator@SERVER3 C:\Users\Administrator>powershell                        Windows PowerShell                                                                     Copyright (C) Microsoft Corporation. All rights reserved.                              
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\Administrator> hostname
+server3
+PS C:\Users\Administrator> whoami
+ws26-jd\administrator
+PS C:\Users\Administrator> Import-Module DhcpServer
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> Get-WindowsFeature -Name DHCP |
+>>     Select-Object Name, InstallState
+
+Name InstallState
+---- ------------
+DHCP    Installed
+
+
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> Get-Service DHCPServer |
+>>     Select-Object Name, Status, StartType
+
+Name        Status StartType
+----        ------ ---------
+DHCPServer Running Automatic
+
+
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> Get-DhcpServerv4Scope |
+>>     Select-Object ScopeId, Name, State, SubnetMask, StartRange, EndRange
+
+
+ScopeId    : 192.168.26.0
+Name       : WS26-JD - Intern netwerk
+State      : Active
+SubnetMask : 255.255.255.0
+StartRange : 192.168.26.100
+EndRange   : 192.168.26.200
+
+
+
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> Get-DhcpServerv4ExclusionRange -ScopeId 192.168.26.0
+
+ScopeId              StartRange           EndRange
+-------              ----------           --------
+192.168.26.0         192.168.26.151       192.168.26.200
+
+
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> Get-DhcpServerInDC
+
+IPAddress            DnsName
+---------            -------
+192.168.26.30        server3.ws26-jd.hogent
+
+
+PS C:\Users\Administrator> Get-DhcpServerv4OptionValue -ScopeId 192.168.26.0 |
+>>     Select-Object OptionId, Name, Value
+
+OptionId Name            Value
+-------- ----            -----
+      15 DNS Domain Name {WS26-JD.hogent}
+       6 DNS Servers     {192.168.26.10, 192.168.26.20}
+      81                 {4}
+      51 Lease           {691200}
+
+
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> Get-DhcpServerv4OptionValue |
+>>     Select-Object OptionId, Name, Value
+
+OptionId Name Value
+-------- ---- -----
+      81      {4}
+
+                                                                                       PS C:\Users\Administrator>                                                             PS C:\Users\Administrator> Get-DhcpServerv4Binding |                                   >>     Select-Object InterfaceAlias, IPAddress, BindingState                           
+InterfaceAlias IPAddress     BindingState
+-------------- ---------     ------------
+Ethernet 2     192.168.26.30         True
+
+
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> Get-DhcpServerv4DnsSetting
+
+
+DynamicUpdates             : Never
+DeleteDnsRROnLeaseExpiry   :
+UpdateDnsRRForOlderClients :
+DnsSuffix                  :
+DisableDnsPtrRRUpdate      : False
+NameProtection             :
+
+
+
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> Get-DhcpServerv4DnsSetting -ScopeId 192.168.26.0
+
+
+DynamicUpdates             : Never
+DeleteDnsRROnLeaseExpiry   :                                                           UpdateDnsRRForOlderClients :                                                           DnsSuffix                  :                                                           DisableDnsPtrRRUpdate      : False                                                     NameProtection             :
+
+
+
+PS C:\Users\Administrator> Get-DhcpServerv4Lease -ScopeId 192.168.26.0 |
+>>     Select-Object IPAddress, HostName, ClientId, AddressState, LeaseExpiryTime
+
+
+IPAddress       : 192.168.26.100
+HostName        : client.WS26-JD.hogent
+ClientId        : 08-00-27-93-ff-25
+AddressState    : Active
+LeaseExpiryTime : 11/12/2026 8:54:15 AM
+
+
+
+PS C:\Users\Administrator> Get-WindowsFeature -Name AD-Certificate, ADCS-Cert-Authority, ADCS-Web-Enrollment |
+>>     Select-Object Name, DisplayName, InstallState
+
+Name                DisplayName                            InstallState
+----                -----------                            ------------
+AD-Certificate      Active Directory Certificate Services     Installed
+ADCS-Cert-Authority Certification Authority                   Installed
+ADCS-Web-Enrollment Certification Authority Web Enrollment    Installed
+
+
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> Get-Service -Name CertSvc, W3SVC |
+>>     Select-Object Name, Status
+
+Name     Status
+----     ------
+CertSvc Running
+W3SVC   Running
+
+
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> certutil.exe -getconfig
+Config String: "server3.WS26-JD.hogent\WS26-JD-Root-CA"
+CertUtil: -getconfig command completed successfully.
+PS C:\Users\Administrator> Get-WindowsFeature |
+>>     Where-Object {
+>>         $_.Name -like "*Cert*" -or
+>>         $_.Name -like "*ADCS*"
+>>     } |
+>>     Select-Object Name, DisplayName, InstallState
+
+Name                   DisplayName                                   InstallState
+----                   -----------                                   ------------
+AD-Certificate         Active Directory Certificate Services            Installed
+ADCS-Cert-Authority    Certification Authority                          Installed
+ADCS-Enroll-Web-Pol    Certificate Enrollment Policy Web Service        Available
+ADCS-Enroll-Web-Svc    Certificate Enrollment Web Service               Available
+ADCS-Web-Enrollment    Certification Authority Web Enrollment           Installed
+ADCS-Device-Enrollment Network Device Enrollment Service                Available
+ADCS-Online-Cert       Online Responder                                 Available
+Web-CertProvider       Centralized SSL Certificate Support              Available
+Web-Cert-Auth          IIS Client Certificate Mapping Authentication    Available
+
+
+PS C:\Users\Administrator> Get-ItemProperty `
+>>     "HKLM:\SYSTEM\CurrentControlSet\Services\CertSvc\Configuration" |
+>>     Select-Object Active
+
+Active
+------
+WS26-JD-Root-CA
+
+
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> Get-ItemProperty `
+>>     "HKLM:\SYSTEM\CurrentControlSet\Services\CertSvc\Configuration\WS26-JD-Root-CA" |
+>>     Select-Object CAType
+
+CAType
+------
+     0
+
+
+PS C:\Users\Administrator> $RootPath = "C:\LabCertificates\WS26-JD-Root-CA.cer"
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> $RootCertificate =
+>>     [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
+>>         $RootPath
+>>     )
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> try {
+>>     $RootCertificate |
+>>         Format-List Subject, Issuer, Thumbprint, NotBefore, NotAfter
+>>
+>>     Write-Output "Actuele thumbprint: $($RootCertificate.Thumbprint)"
+>> }
+>> finally {
+>>     $RootCertificate.Dispose()
+>> }
+
+
+Subject    : CN=WS26-JD-Root-CA, DC=WS26-JD, DC=hogent
+Issuer     : CN=WS26-JD-Root-CA, DC=WS26-JD, DC=hogent
+Thumbprint : 344944DE76805C57B48E01B14E7000C84ABCD7FA
+NotBefore  : 11/1/2026 11:25:00 AM
+NotAfter   : 11/1/2031 11:34:59 AM
+
+
+
+Actuele thumbprint: 344944DE76805C57B48E01B14E7000C84ABCD7FA
+PS C:\Users\Administrator> & {
+>>     $ErrorActionPreference = "Stop"
+>>
+>>     $TempCertificate = Join-Path $env:TEMP (
+>>         "WS2-TrustTest-" + [guid]::NewGuid().ToString("N") + ".cer"
+>>     )
+>>
+>>     $ExpectedCertificate = $null
+>>
+>>     try {
+>>         $CertutilArguments = @(
+>>             "-f"
+>>             "-config"
+>>             "server3.WS26-JD.hogent\WS26-JD-Root-CA"
+>>             "-ca.cert"
+>>             $TempCertificate
+>>         )
+>>
+>>         & certutil.exe @CertutilArguments
+>>
+>>         if ($LASTEXITCODE -ne 0) {
+>>             throw "Ophalen van het actuele CA-certificaat mislukt."
+>>         }
+>>
+>>         $ExpectedCertificate =
+>>             [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
+>>                 $TempCertificate
+>>             )
+>>
+>>         $Thumbprint = $ExpectedCertificate.Thumbprint
+>>
+>>         $Trusted = Get-Item `
+>>             -LiteralPath "Cert:\LocalMachine\Root\$Thumbprint" `
+>>             -ErrorAction Stop
+>>
+>>         $Now = Get-Date
+>>
+>>         if (
+>>             $Trusted.NotBefore -gt $Now -or
+>>             $Trusted.NotAfter -le $Now
+>>         ) {
+>>             throw "Het vertrouwde rootcertificaat is niet geldig op de testdatum."
+>>         }
+>>
+>>         $PolicyPath =
+>>             "HKLM:\SOFTWARE\Policies\Microsoft\SystemCertificates\" +
+>>             "Root\Certificates\$Thumbprint"
+>>
+>>         $Policy = Get-ItemProperty `
+>>             -LiteralPath $PolicyPath `
+>>             -Name Blob `
+>>             -ErrorAction Stop
+>>
+>>         if (@($Policy.Blob).Count -eq 0) {
+>>             throw "Lege certificaatblob in de beleidsopslag."
+>>         }
+>>
+>>         [PSCustomObject]@{
+>>             Computer                 = $env:COMPUTERNAME
+>>             Thumbprint               = $Thumbprint
+>>             TrustedRootPresent       = $true
+>>             PolicyCertificatePresent = $true
+>>         } | Format-List
+>>     }
+>>     finally {
+>>         if ($null -ne $ExpectedCertificate) {
+>>             $ExpectedCertificate.Dispose()
+>>         }
+>>
+>>         if (Test-Path -LiteralPath $TempCertificate) {
+>>             Remove-Item `
+>>                 -LiteralPath $TempCertificate `
+>>                 -Force `
+>>                 -ErrorAction Stop
+>>         }
+>>     }
+>> }
+CA cert[0]: 3 -- Valid
+CA cert[0]:
+-----BEGIN CERTIFICATE-----
+MIIDcTCCAlmgAwIBAgIQNoEFPNQSP69NtudvhH1BIzANBgkqhkiG9w0BAQsFADBL
+MRYwFAYKCZImiZPyLGQBGRYGaG9nZW50MRcwFQYKCZImiZPyLGQBGRYHV1MyNi1K
+RDEYMBYGA1UEAxMPV1MyNi1KRC1Sb290LUNBMB4XDTI2MTEwMTExMjUwMFoXDTMx
+MTEwMTExMzQ1OVowSzEWMBQGCgmSJomT8ixkARkWBmhvZ2VudDEXMBUGCgmSJomT
+8ixkARkWB1dTMjYtSkQxGDAWBgNVBAMTD1dTMjYtSkQtUm9vdC1DQTCCASIwDQYJ
+KoZIhvcNAQEBBQADggEPADCCAQoCggEBAMLDHjaclqJxRwWoEWlv1lbmu5fF8oSF
+EqnAl1A8B7jDaSyTGFLMsz64XiyePEfrz91ngxpnjAHpN431p+ynD+hQsm1TMaw/
+YctZzo7u7LzSYhS+6/1bvS7tJYct4geVcctoct8fZB5bKtp1RPmFMTOVWQJW4PI0
+5o+NFQXcor+6162pCLE67s4souVJSf1CGGxo5gApwks05B5XCH4UlLMIogPwT+Wm
+pOLC1GlRTqOlxJAU9eg5CWVTfItlQhksuw1Mznuk9tNxcl2tg7KaRM7CgQjUFFON
+8D8N3huQn3j6CTi2hnvuZAoBUpjMz331NjcmN/+bXXYjnW629fym86ECAwEAAaNR
+ME8wCwYDVR0PBAQDAgGGMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFEqUmYlu
+tCJY9TFURuATy2DtfJ6dMBAGCSsGAQQBgjcVAQQDAgEAMA0GCSqGSIb3DQEBCwUA
+A4IBAQBG0FqeE5fohwwKmZLlTquBMAquYs6+3xjBZJPOGskAC6OYMQkl3iAU/Uyq
+fSjKjGdy5K/QR2ONDKM3xDcx7Eiwvf1MYUfzgQoHG07D4rR+SiZ11jDdS3K+cSh7
+D4Enyu7dkKFf3HUaxCPK56TLSwxllt1Y+gWrvD/Z+a3WQR1Hf1lBPKWxU4MVswDG
+ApJOLTFiEJsnKRARVeQP82mN5VxQiPeIoHwKslRMsshQMpfzrVdKgp6uDwcv2wKP
+WMJTTM3lvbAugzpKTRTVY9ucBUWEtFYQNCEQQOPLfzuv4BgIquD/+FISm3oYQbrj
+0K0X3TgNkN8cHx5RQYRNvRhaFEiI
+-----END CERTIFICATE-----
+
+CertUtil: -ca.cert command completed successfully.
+
+
+Computer                 : SERVER3
+Thumbprint               : 344944DE76805C57B48E01B14E7000C84ABCD7FA
+TrustedRootPresent       : True
+PolicyCertificatePresent : True
+
+
+
+PS C:\Users\Administrator> gpresult.exe /scope computer /r
+
+Microsoft (R) Windows (R) Operating System Group Policy Result tool v2.0
+© Microsoft Corporation. All rights reserved.
+
+Created on ‎11/‎4/‎2026 at 9:32:40 AM
+
+
+RSOP data for  on SERVER3 : Logging Mode
+-----------------------------------------
+
+OS Configuration:            Member Server
+OS Version:                  10.0.26100
+Site Name:                   Default-First-Site-Name
+Roaming Profile:
+Local Profile:
+Connected over a slow link?: No
+
+
+COMPUTER SETTINGS
+------------------
+    CN=SERVER3,OU=Servers,DC=WS26-JD,DC=hogent
+    Last time Group Policy was applied: 11/4/2026 at 8:50:04 AM
+    Group Policy was applied from:      server1.WS26-JD.hogent
+    Group Policy slow link threshold:   500 kbps
+    Domain Name:                        WS26-JD
+    Domain Type:                        Windows 2008 or later
+
+    Applied Group Policy Objects
+    -----------------------------
+        Default Domain Policy
+        WS26 - Vertrouw Root CA
+
+    The following GPOs were not applied because they were filtered out
+    -------------------------------------------------------------------
+        Local Group Policy
+            Filtering:  Not Applied (Empty)
+
+    The computer is a part of the following security groups
+    -------------------------------------------------------
+        BUILTIN\Administrators
+        Everyone
+        Certificate Service DCOM Access
+        BUILTIN\Users
+        NT AUTHORITY\NETWORK
+        NT AUTHORITY\Authenticated Users
+        This Organization
+        SERVER3$
+        Domain Computers
+        Authentication authority asserted identity
+        Denied RODC Password Replication Group
+        Cert Publishers
+        System Mandatory Level
+
+PS C:\Users\Administrator> Import-Module WebAdministration
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> Get-WebBinding -Name "Default Web Site" -Protocol https |
+>>     Format-List protocol, bindingInformation, certificateHash, certificateStoreName
+
+
+protocol             : https
+bindingInformation   : *:443:
+certificateHash      : 8DB75D9CAD0E3544F1D0BD929E8B4E549F5EFE69
+certificateStoreName : MY
+
+
+
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> Get-ChildItem Cert:\LocalMachine\My |
+>>     Where-Object {
+>>         $_.Subject -eq "CN=server3.WS26-JD.hogent"
+>>     } |
+>>     Format-List Subject, Issuer, Thumbprint,
+>>         HasPrivateKey, NotBefore, NotAfter,
+>>         DnsNameList, EnhancedKeyUsageList
+
+
+Subject              : CN=server3.WS26-JD.hogent
+Issuer               : CN=WS26-JD-Root-CA, DC=WS26-JD, DC=hogent
+Thumbprint           : 8DB75D9CAD0E3544F1D0BD929E8B4E549F5EFE69
+HasPrivateKey        : True
+NotBefore            : 11/1/2026 11:35:03 AM
+NotAfter             : 10/31/2028 11:35:03 AM
+DnsNameList          : {server3.WS26-JD.hogent}
+EnhancedKeyUsageList : {Server Authentication (1.3.6.1.5.5.7.3.1)}
+
+
+
+PS C:\Users\Administrator> Get-NetConnectionProfile |
+>>     Select-Object InterfaceAlias, NetworkCategory
+
+InterfaceAlias     NetworkCategory
+--------------     ---------------
+Ethernet 2     DomainAuthenticated
+Ethernet                    Public
+
+
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> Get-NetFirewallProfile -PolicyStore ActiveStore |
+>>     Select-Object Name, Enabled,
+>>         DefaultInboundAction,
+>>         DefaultOutboundAction
+
+Name    Enabled DefaultInboundAction DefaultOutboundAction
+----    ------- -------------------- ---------------------
+Domain     True                Block                 Allow
+Private    True                Block                 Allow
+Public     True                Block                 Allow
+
+
+PS C:\Users\Administrator> $Rules = Get-NetFirewallRule -PolicyStore ActiveStore |
+>>     Where-Object {
+>>         $_.Enabled -eq "True" -and
+>>         $_.Direction -eq "Inbound" -and
+>>         $_.Action -eq "Allow"
+>>     }
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> $Rules |
+>>     Select-Object Name, DisplayName, Profile, PolicyStoreSourceType |
+>>     Sort-Object Name
+
+Name                                                       DisplayName
+----                                                       -----------
+CoreNet-DHCP-In                                            Core Networking - Dynami...
+CoreNet-DHCPV6-In                                          Core Networking - Dynami...
+CoreNet-ICMP4-DUFRAG-In                                    Core Networking - Destin...
+CoreNet-ICMP6-DU-In                                        Core Networking - Destin...
+CoreNet-ICMP6-LD-In                                        Core Networking - Multic...
+CoreNet-ICMP6-LQ-In                                        Core Networking - Multic...
+CoreNet-ICMP6-LR2-In                                       Core Networking - Multic...
+CoreNet-ICMP6-LR-In                                        Core Networking - Multic...
+CoreNet-ICMP6-NDA-In                                       Core Networking - Neighb...
+CoreNet-ICMP6-NDS-In                                       Core Networking - Neighb...
+CoreNet-ICMP6-PP-In                                        Core Networking - Parame...
+CoreNet-ICMP6-PTB-In                                       Core Networking - Packet...
+CoreNet-ICMP6-RA-In                                        Core Networking - Router...
+CoreNet-ICMP6-RS-In                                        Core Networking - Router...
+CoreNet-ICMP6-TE-In                                        Core Networking - Time E...
+Microsoft-Windows-CertificateServices-CertSvc-DCOM-In      Certification Authority ...
+Microsoft-Windows-CertificateServices-CertSvc-RPC-EPMAP-In Certification Authority ...
+Microsoft-Windows-CertificateServices-CertSvc-RPC-NP-In    Certification Authority ...
+Microsoft-Windows-CertificateServices-CertSvc-RPC-TCP-In   Certification Authority ...
+Microsoft-Windows-DHCP-ClientSvc-RPCSS-TCP-In              DHCP Server (RPCSS-In)
+Microsoft-Windows-DHCP-ClientSvc-RPC-TCP-In                DHCP Server (RPC-In)
+Microsoft-Windows-DHCP-SMB-TCP-In                          DHCP Server (SMB-In)
+WS2-Managed-Ping-Lab                                       WS2-Managed-Ping-Lab
+WS2-Managed-Server3-DHCPv4                                 WS2-Managed-Server3-DHCPv4
+WS2-Managed-Server3-RPC-Dynamic                            WS2-Managed-Server3-RPC-...
+WS2-Managed-Server3-WebEnrollment                          WS2-Managed-Server3-WebE...
+WS2-Managed-SSH-Lab                                        WS2-Managed-SSH-Lab
+WS2-Managed-SSH-NAT                                        WS2-Managed-SSH-NAT
+WS2-Managed-WinRM-NAT                                      WS2-Managed-WinRM-NAT
+
+
+PS C:\Users\Administrator> $Rules = Get-NetFirewallRule -PolicyStore ActiveStore |
+>>     Where-Object {
+>>         $_.Enabled -eq "True" -and
+>>         $_.Direction -eq "Inbound" -and
+>>         $_.Action -eq "Allow"
+>>     }
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> $Overview = foreach ($Rule in $Rules) {
+>>     $Port      = $Rule | Get-NetFirewallPortFilter
+>>     $Address   = $Rule | Get-NetFirewallAddressFilter
+>>     $Interface = $Rule | Get-NetFirewallInterfaceFilter
+>>     $Service   = $Rule | Get-NetFirewallServiceFilter
+>>
+>>     [PSCustomObject]@{
+>>         Name          = $Rule.Name
+>>         Protocol      = $Port.Protocol
+>>         LocalPort     = $Port.LocalPort -join ","
+>>         RemoteAddress = $Address.RemoteAddress -join ","
+>>         Interface     = $Interface.InterfaceAlias -join ","
+>>         Service       = $Service.Service -join ","
+>>     }
+>> }
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> $Overview | Format-Table -Wrap -AutoSize
+
+Name                                                       Protocol LocalPort   Remote
+                                                                                Addres
+                                                                                s
+----                                                       -------- ---------   ------
+CoreNet-ICMP6-RA-In                                        ICMPv6   RPC         fe80::
+                                                                                /64
+CoreNet-ICMP4-DUFRAG-In                                    ICMPv4   RPC         Any
+CoreNet-DHCP-In                                            UDP      68          Any
+CoreNet-DHCPV6-In                                          UDP      546         Any
+CoreNet-ICMP6-NDS-In                                       ICMPv6   RPC         Any
+CoreNet-ICMP6-RS-In                                        ICMPv6   RPC         Any
+CoreNet-ICMP6-NDA-In                                       ICMPv6   RPC         Any
+CoreNet-ICMP6-PP-In                                        ICMPv6   RPC         Any
+CoreNet-ICMP6-PTB-In                                       ICMPv6   RPC         Any
+CoreNet-ICMP6-LD-In                                        ICMPv6   RPC         LocalS
+                                                                                ubnet6
+CoreNet-ICMP6-DU-In                                        ICMPv6   RPC         Any
+CoreNet-ICMP6-LR2-In                                       ICMPv6   RPC         LocalS
+                                                                                ubnet6
+CoreNet-ICMP6-LQ-In                                        ICMPv6   RPC         LocalS
+                                                                                ubnet6
+CoreNet-ICMP6-LR-In                                        ICMPv6   RPC         LocalS
+                                                                                ubnet6
+CoreNet-ICMP6-TE-In                                        ICMPv6   RPC         Any
+Microsoft-Windows-CertificateServices-CertSvc-RPC-TCP-In   TCP      RPC         192.16
+                                                                                8.26.0
+                                                                                /255.2
+                                                                                55.255
+                                                                                .0
+Microsoft-Windows-CertificateServices-CertSvc-DCOM-In      TCP      135         192.16
+                                                                                8.26.0
+                                                                                /255.2
+                                                                                55.255
+                                                                                .0
+Microsoft-Windows-CertificateServices-CertSvc-RPC-NP-In    TCP      445         192.16
+                                                                                8.26.0
+                                                                                /255.2
+                                                                                55.255
+                                                                                .0
+Microsoft-Windows-CertificateServices-CertSvc-RPC-EPMAP-In TCP      RPCEPMap    192.16
+                                                                                8.26.0
+                                                                                /255.2
+                                                                                55.255
+                                                                                .0
+Microsoft-Windows-DHCP-ClientSvc-RPCSS-TCP-In              TCP      RPCEPMap    192.16
+                                                                                8.26.0
+                                                                                /255.2
+                                                                                55.255
+                                                                                .0
+Microsoft-Windows-DHCP-SMB-TCP-In                          TCP      445         192.16
+                                                                                8.26.0
+                                                                                /255.2
+                                                                                55.255
+                                                                                .0
+Microsoft-Windows-DHCP-ClientSvc-RPC-TCP-In                TCP      RPC         192.16
+                                                                                8.26.0
+                                                                                /255.2
+                                                                                55.255
+                                                                                .0
+WS2-Managed-WinRM-NAT                                      TCP      5985        10.0.2
+                                                                                .2
+WS2-Managed-SSH-NAT                                        TCP      22          10.0.2
+                                                                                .2
+WS2-Managed-SSH-Lab                                        TCP      22          192.16
+                                                                                8.26.0
+                                                                                /255.2
+                                                                                55.255
+                                                                                .0
+WS2-Managed-Ping-Lab                                       ICMPv4   RPC         192.16
+                                                                                8.26.0
+                                                                                /255.2
+                                                                                55.255
+                                                                                .0
+WS2-Managed-Server3-WebEnrollment                          TCP      80,443      192.16
+                                                                                8.26.0
+                                                                                /255.2
+                                                                                55.255
+                                                                                .0
+WS2-Managed-Server3-DHCPv4                                 UDP      67,68       Any
+WS2-Managed-Server3-RPC-Dynamic                            TCP      49152-65535 192.16
+                                                                                8.26.0
+                                                                                /255.2
+                                                                                55.255
+                                                                                .0
+
+
+PS C:\Users\Administrator> Get-ScheduledTask |
+>>     Where-Object {
+>>         $_.TaskName -like "WS2-WebCertificate-*" -or
+>>         $_.TaskName -like "WS2-DHCP-Authorize-*" -or
+>>         $_.TaskName -eq "WS2-PublishRootCA"
+>>     } |
+>>     Select-Object TaskName, TaskPath, State
+PS C:\Users\Administrator>
+PS C:\Users\Administrator> Get-ChildItem C:\ProgramData -Directory |
+>>     Where-Object {
+>>         $_.Name -like "WS2-WebCertificate-*" -or
+>>         $_.Name -like "WS2-DHCP-Authorize-*"
+>>     } |
+>>     Select-Object Name, FullName
+PS C:\Users\Administrator>
+
+client
+PS C:\Users\vagrant> hostname
+client
+PS C:\Users\vagrant> whoami
+client\vagrant
+PS C:\Users\vagrant> Get-CimInstance Win32_OperatingSystem |
+>>     Select-Object Caption, Version, BuildNumber
+
+Caption                                    Version    BuildNumber
+-------                                    -------    -----------
+Microsoft Windows 11 Enterprise Evaluation 10.0.26200 26200
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-ItemProperty `
+>>     "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" |
+>>     Select-Object ProductName, InstallationType
+
+ProductName                      InstallationType
+-----------                      ----------------
+Windows 10 Enterprise Evaluation Client
+
+
+PS C:\Users\vagrant> Get-NetAdapter |
+>>     Select-Object Name, ifIndex, Status, MacAddress
+
+Name       ifIndex Status MacAddress
+----       ------- ------ ----------
+Ethernet 2       7 Up     08-00-27-93-FF-25
+Ethernet         2 Up     08-00-27-AD-AB-41
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetIPConfiguration
+
+
+InterfaceAlias       : Ethernet
+InterfaceIndex       : 2
+InterfaceDescription : Intel(R) PRO/1000 MT Desktop Adapter
+NetProfile.Name      : Network
+IPv6Address          : fd17:625c:f037:2:d3ed:8e40:e3f5:e4aa
+IPv4Address          : 10.0.2.15
+IPv6DefaultGateway   : fe80::2
+IPv4DefaultGateway   : 10.0.2.2
+DNSServer            : fd17:625c:f037:2::3
+                       100.81.163.84
+                       8.8.8.8
+
+InterfaceAlias       : Ethernet 2
+InterfaceIndex       : 7
+InterfaceDescription : Intel(R) PRO/1000 MT Desktop Adapter #2
+NetProfile.Name      : WS26-JD.hogent
+IPv4Address          : 192.168.26.100
+IPv6DefaultGateway   :
+IPv4DefaultGateway   :
+DNSServer            : 192.168.26.10
+                       192.168.26.20
+
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetIPAddress -AddressFamily IPv4 |
+>>     Select-Object InterfaceAlias, IPAddress, PrefixLength, PrefixOrigin
+
+InterfaceAlias              IPAddress      PrefixLength PrefixOrigin
+--------------              ---------      ------------ ------------
+Ethernet 2                  192.168.26.100           24         Dhcp
+Ethernet                    10.0.2.15                24         Dhcp
+Loopback Pseudo-Interface 1 127.0.0.1                 8    WellKnown
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetRoute -AddressFamily IPv4 -DestinationPrefix "0.0.0.0/0" |
+>>     Select-Object InterfaceAlias, NextHop, RouteMetric
+
+InterfaceAlias NextHop  RouteMetric
+-------------- -------  -----------
+Ethernet       10.0.2.2           0
+
+
+PS C:\Users\vagrant> Get-DnsClientServerAddress -AddressFamily IPv4 |
+>>     Select-Object InterfaceAlias, ServerAddresses
+
+InterfaceAlias              ServerAddresses
+--------------              ---------------
+Ethernet                    {100.81.163.84, 8.8.8.8}
+Ethernet 2                  {192.168.26.10, 192.168.26.20}
+Loopback Pseudo-Interface 1 {}
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> $ActiveIndexes = @(
+>>     Get-NetAdapter |
+>>         Where-Object Status -eq "Up" |
+>>         Select-Object -ExpandProperty ifIndex
+>> )
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-DnsClient |
+>>     Where-Object { $_.InterfaceIndex -in $ActiveIndexes } |
+>>     Select-Object InterfaceAlias,
+>>         RegisterThisConnectionsAddress,
+>>         UseSuffixWhenRegistering
+
+InterfaceAlias RegisterThisConnectionsAddress UseSuffixWhenRegistering
+-------------- ------------------------------ ------------------------
+Ethernet                                False                    False
+Ethernet 2                              False                    False
+
+
+PS C:\Users\vagrant> Get-CimInstance Win32_ComputerSystem |
+>>     Select-Object Name, Domain, PartOfDomain, DomainRole
+
+Name   Domain         PartOfDomain DomainRole
+----   ------         ------------ ----------
+CLIENT WS26-JD.hogent         True          1
+
+
+PS C:\Users\vagrant> Test-ComputerSecureChannel -Verbose
+VERBOSE: Performing the operation "Test-ComputerSecureChannel" on target "CLIENT".
+True
+VERBOSE: The secure channel between the local computer and the domain WS26-JD.hogent
+is in good condition.
+PS C:\Users\vagrant> ipconfig /all
+
+Windows IP Configuration
+
+   Host Name . . . . . . . . . . . . : client
+   Primary Dns Suffix  . . . . . . . : WS26-JD.hogent
+   Node Type . . . . . . . . . . . . : Hybrid
+   IP Routing Enabled. . . . . . . . : No
+   WINS Proxy Enabled. . . . . . . . : No
+   DNS Suffix Search List. . . . . . : WS26-JD.hogent
+                                       home
+
+Ethernet adapter Ethernet:
+
+   Connection-specific DNS Suffix  . : home
+   Description . . . . . . . . . . . : Intel(R) PRO/1000 MT Desktop Adapter
+   Physical Address. . . . . . . . . : 08-00-27-AD-AB-41
+   DHCP Enabled. . . . . . . . . . . : Yes
+   Autoconfiguration Enabled . . . . : Yes
+   IPv6 Address. . . . . . . . . . . : fd17:625c:f037:2:d3ed:8e40:e3f5:e4aa(Preferred)
+   Temporary IPv6 Address. . . . . . : fd17:625c:f037:2:5c96:8b08:c268:6b67(Preferred)
+   Link-local IPv6 Address . . . . . : fe80::ffc6:b0ec:c3bc:1086%2(Preferred)
+   IPv4 Address. . . . . . . . . . . : 10.0.2.15(Preferred)
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Lease Obtained. . . . . . . . . . : Sunday, September 28, 1890 2:25:56 AM
+   Lease Expires . . . . . . . . . . : Thursday, November 5, 2026 12:54:14 AM
+   Default Gateway . . . . . . . . . : fe80::2%2
+                                       10.0.2.2
+   DHCP Server . . . . . . . . . . . : 10.0.2.2
+   DHCPv6 IAID . . . . . . . . . . . : 101187623
+   DHCPv6 Client DUID. . . . . . . . : 00-01-01-00-32-78-E1-DC-08-00-27-AD-AB-41
+   DNS Servers . . . . . . . . . . . : 100.81.163.84
+                                       8.8.8.8
+                                       fd17:625c:f037:2::3
+   NetBIOS over Tcpip. . . . . . . . : Enabled
+
+Ethernet adapter Ethernet 2:
+
+   Connection-specific DNS Suffix  . : WS26-JD.hogent
+   Description . . . . . . . . . . . : Intel(R) PRO/1000 MT Desktop Adapter #2
+   Physical Address. . . . . . . . . : 08-00-27-93-FF-25
+   DHCP Enabled. . . . . . . . . . . : Yes
+   Autoconfiguration Enabled . . . . : Yes
+   Link-local IPv6 Address . . . . . : fe80::c01e:a098:76b0:f477%7(Preferred)
+   IPv4 Address. . . . . . . . . . . : 192.168.26.100(Preferred)
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Lease Obtained. . . . . . . . . . : Sunday, September 28, 1890 2:25:56 AM
+   Lease Expires . . . . . . . . . . : Thursday, November 12, 2026 12:54:14 AM
+   Default Gateway . . . . . . . . . :
+   DHCP Server . . . . . . . . . . . : 192.168.26.30
+   DHCPv6 IAID . . . . . . . . . . . : 117964839
+   DHCPv6 Client DUID. . . . . . . . : 00-01-01-00-32-78-E1-DC-08-00-27-AD-AB-41
+   DNS Servers . . . . . . . . . . . : 192.168.26.10
+                                       192.168.26.20
+   NetBIOS over Tcpip. . . . . . . . : Enabled
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetIPInterface -AddressFamily IPv4 |
+>>     Select-Object InterfaceAlias, Dhcp, ConnectionState
+
+InterfaceAlias                  Dhcp ConnectionState
+--------------                  ---- ---------------
+Ethernet 2                   Enabled       Connected
+Ethernet                     Enabled       Connected
+Loopback Pseudo-Interface 1 Disabled       Connected
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetIPAddress -AddressFamily IPv4 |
+>>     Select-Object InterfaceAlias, IPAddress, PrefixLength, PrefixOrigin
+
+InterfaceAlias              IPAddress      PrefixLength PrefixOrigin
+--------------              ---------      ------------ ------------
+Ethernet 2                  192.168.26.100           24         Dhcp
+Ethernet                    10.0.2.15                24         Dhcp
+Loopback Pseudo-Interface 1 127.0.0.1                 8    WellKnown
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-DnsClientServerAddress -AddressFamily IPv4
+
+InterfaceAlias               Interface Address ServerAddresses
+                             Index     Family
+--------------               --------- ------- ---------------
+Ethernet                             2 IPv4    {100.81.163.84, 8.8.8.8}
+Ethernet 2                           7 IPv4    {192.168.26.10, 192.168.26.20}
+Loopback Pseudo-Interface 1          1 IPv4    {}
+
+
+PS C:\Users\vagrant> & {
+>>     $ErrorActionPreference = "Stop"
+>>
+>>     $TempCertificate = Join-Path $env:TEMP (
+>>         "WS2-TrustTest-" + [guid]::NewGuid().ToString("N") + ".cer"
+>>     )
+>>
+>>     $ExpectedCertificate = $null
+>>
+>>     try {
+>>         $CertutilArguments = @(
+>>             "-f"
+>>             "-config"
+>>             "server3.WS26-JD.hogent\WS26-JD-Root-CA"
+>>             "-ca.cert"
+>>             $TempCertificate
+>>         )
+>>
+>>         & certutil.exe @CertutilArguments
+>>
+>>         if ($LASTEXITCODE -ne 0) {
+>>             throw "Ophalen van het actuele CA-certificaat mislukt."
+>>         }
+>>
+>>         $ExpectedCertificate =
+>>             [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
+>>                 $TempCertificate
+>>             )
+>>
+>>         $Thumbprint = $ExpectedCertificate.Thumbprint
+>>
+>>         $Trusted = Get-Item `
+>>             -LiteralPath "Cert:\LocalMachine\Root\$Thumbprint" `
+>>             -ErrorAction Stop
+>>
+>>         $Now = Get-Date
+>>
+>>         if (
+>>             $Trusted.NotBefore -gt $Now -or
+>>             $Trusted.NotAfter -le $Now
+>>         ) {
+>>             throw "Het vertrouwde rootcertificaat is niet geldig op de testdatum."
+>>         }
+>>
+>>         $PolicyPath =
+>>             "HKLM:\SOFTWARE\Policies\Microsoft\SystemCertificates\" +
+>>             "Root\Certificates\$Thumbprint"
+>>
+>>         $Policy = Get-ItemProperty `
+>>             -LiteralPath $PolicyPath `
+>>             -Name Blob `
+>>             -ErrorAction Stop
+>>
+>>         if (@($Policy.Blob).Count -eq 0) {
+>>             throw "Lege certificaatblob in de beleidsopslag."
+>>         }
+>>
+>>         [PSCustomObject]@{
+>>             Computer                 = $env:COMPUTERNAME
+>>             Thumbprint               = $Thumbprint
+>>             TrustedRootPresent       = $true
+>>             PolicyCertificatePresent = $true
+>>         } | Format-List
+>>     }
+>>     finally {
+>>         if ($null -ne $ExpectedCertificate) {
+>>             $ExpectedCertificate.Dispose()
+>>         }
+>>
+>>         if (Test-Path -LiteralPath $TempCertificate) {
+>>             Remove-Item `
+>>                 -LiteralPath $TempCertificate `
+>>                 -Force `
+>>                 -ErrorAction Stop
+>>         }
+>>     }
+>> }
+CertUtil: -ca.cert command FAILED: 0x800706ba (WIN32: 1722 RPC_S_SERVER_UNAVAILABLE)
+CertUtil: The RPC server is unavailable.
+Ophalen van het actuele CA-certificaat mislukt.
+At line:22 char:13
++             throw "Ophalen van het actuele CA-certificaat mislukt."
++             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Ophalen van het...ficaat mislukt.:St
+   ring) [], RuntimeException
+    + FullyQualifiedErrorId : Ophalen van het actuele CA-certificaat mislukt.
+
+PS C:\Users\vagrant> gpresult.exe /scope computer /r
+
+Microsoft (R) Windows (R) Operating System Group Policy Result tool v2.0
+© Microsoft Corporation. All rights reserved.
+
+Created on ‎11/‎4/‎2026 at 1:32:41 AM
+
+
+RSOP data for  on CLIENT : Logging Mode
+----------------------------------------
+
+OS Configuration:            Member Workstation
+OS Version:                  10.0.26200
+Site Name:                   Default-First-Site-Name
+Roaming Profile:
+Local Profile:
+Connected over a slow link?: No
+
+
+COMPUTER SETTINGS
+------------------
+                                                                                           Last time Group Policy was applied: 11/4/2026 at 12:56:55 AM                           Group Policy was applied from:      server1.WS26-JD.hogent                             Group Policy slow link threshold:   500 kbps
+    Domain Name:                        WS26-JD
+    Domain Type:                        Windows 2008 or later
+
+    Applied Group Policy Objects
+    -----------------------------
+        Default Domain Policy
+        WS26 - Vertrouw Root CA
+
+    The following GPOs were not applied because they were filtered out
+    -------------------------------------------------------------------
+        Local Group Policy
+            Filtering:  Not Applied (Empty)
+
+    The computer is a part of the following security groups
+    -------------------------------------------------------
+        BUILTIN\Administrators
+        Everyone
+        BUILTIN\Users
+        NT AUTHORITY\NETWORK
+        NT AUTHORITY\Authenticated Users
+        This Organization
+        CLIENT$
+        Domain Computers
+        Authentication authority asserted identity
+        System Mandatory Level
+
+PS C:\Users\vagrant> foreach ($DnsServer in @("192.168.26.10", "192.168.26.20")) {
+>>     Resolve-DnsName `
+>>         -Name "intranet.WS26-JD.hogent" `
+>>         -Server $DnsServer `
+>>         -Type A `
+>>         -DnsOnly `
+>>         -ErrorAction Stop
+>> }
+
+Name                                           Type   TTL   Section    IPAddress
+----                                           ----   ---   -------    ---------
+intranet.WS26-JD.hogent                        A      3600  Answer     192.168.26.10
+intranet.WS26-JD.hogent                        A      3600  Answer     192.168.26.10
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> $Page = Invoke-WebRequest `
+>>     -Uri "http://intranet.WS26-JD.hogent" `
+>>     -UseBasicParsing `
+>>     -TimeoutSec 30 `
+>>     -ErrorAction Stop
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> [PSCustomObject]@{
+>>     StatusCode = $Page.StatusCode
+>>     HelloWorldFound = ($Page.Content -match "Hello World")
+>> }
+
+StatusCode HelloWorldFound
+---------- ---------------
+       200            True
+
+
+PS C:\Users\vagrant> Get-WindowsCapability -Online |
+>>     Where-Object {
+>>         $_.Name -like "Rsat.*" -and
+>>         $_.State -eq "Installed"
+>>     } |
+>>     Select-Object Name, State
+
+Name                                             State
+----                                             -----
+Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0 Installed
+Rsat.DHCP.Tools~~~~0.0.1.0                   Installed
+Rsat.Dns.Tools~~~~0.0.1.0                    Installed
+Rsat.GroupPolicy.Management.Tools~~~~0.0.1.0 Installed
+Rsat.ServerManager.Tools~~~~0.0.1.0          Installed
+
+
+PS C:\Users\vagrant> Get-NetConnectionProfile |
+>>     Select-Object InterfaceAlias, NetworkCategory
+
+InterfaceAlias     NetworkCategory
+--------------     ---------------
+Ethernet 2     DomainAuthenticated
+Ethernet                    Public
+
+
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> Get-NetFirewallProfile -PolicyStore ActiveStore |
+>>     Select-Object Name, Enabled,
+>>         DefaultInboundAction,
+>>         DefaultOutboundAction
+
+Name    Enabled DefaultInboundAction DefaultOutboundAction
+----    ------- -------------------- ---------------------
+Domain     True                Block                 Allow
+Private    True                Block                 Allow
+Public     True                Block                 Allow
+
+
+PS C:\Users\vagrant> $Rules = Get-NetFirewallRule -PolicyStore ActiveStore |
+>>     Where-Object {
+>>         $_.Enabled -eq "True" -and
+>>         $_.Direction -eq "Inbound" -and
+>>         $_.Action -eq "Allow"
+>>     }
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> $Rules |
+>>     Select-Object Name, DisplayName, Profile, PolicyStoreSourceType |
+>>     Sort-Object Name
+
+Name
+----
+{04272298-8546-4BF9-BB46-485E07800DFF}
+{1237921D-BB4F-460D-ADD8-2719CBF0A3CA}
+{181EF35E-E765-485A-B1AA-5CA6F72B1621}
+{28CDE5BD-5C4E-4FC4-A9FA-96F849E83AEF}
+{347E9510-18DA-424E-892F-31C9D4CD4FC4}
+{376F1C36-88BE-4982-BCF3-4E275B51C924}
+{43FA2DF4-546C-4459-B08B-84F00FDA83C2}
+{49BA0EB1-316C-4FCB-A9F3-8DC361171627}
+{6700331B-F72D-4603-A86C-DC99B8B0CFC1}
+{7DB728A6-DB4C-4715-BDC2-F7951DEC639A}
+{7DFCCC3F-A373-4B9F-88CD-9B58DAEF9683}
+{901848F0-0F10-4DC0-8231-1264735839B3}
+{9920F178-605B-4227-838F-AACBF6421058}
+{A9DFB06F-DE53-44D5-919A-81AB100A97BD}
+{CE4621E2-F821-4F02-96BD-616DC562080B}
+{DD832481-E66C-4331-A86C-D1A36BA9CCB6}
+{E4B30BE3-AF3F-4DF5-8F11-AAB8402C7E75}
+AllJoyn-Router-In-TCP
+AllJoyn-Router-In-UDP
+CDPSvc-In-TCP
+CDPSvc-In-UDP
+CDPSvc-WFD-In-TCP
+CoreNet-DHCP-In
+CoreNet-DHCPV6-In
+CoreNet-ICMP4-DUFRAG-In
+CoreNet-ICMP6-DU-In
+CoreNet-ICMP6-LD-In
+CoreNet-ICMP6-LQ-In
+CoreNet-ICMP6-LR2-In
+CoreNet-ICMP6-LR-In
+CoreNet-ICMP6-NDA-In
+CoreNet-ICMP6-NDS-In
+CoreNet-ICMP6-PP-In
+CoreNet-ICMP6-PTB-In
+CoreNet-ICMP6-RA-In
+CoreNet-ICMP6-RS-In
+CoreNet-ICMP6-TE-In
+CoreNet-IGMP-In
+CoreNet-IPHTTPS-In
+CoreNet-IPv6-In
+CoreNet-Teredo-In
+DeliveryOptimization-TCP-In
+DeliveryOptimization-UDP-In
+DIAL-Protocol-Server-HTTPSTR-In-TCP-LocalSubnetScope
+DIAL-Protocol-Server-In-TCP-NoScope
+EdgeWebView2-MDNS-In-UDP
+MDNS-In-UDP-Domain-Active
+MDNS-In-UDP-Private-Active
+MDNS-In-UDP-Public-Active
+Microsoft.AAD.BrokerPlugin_cw5n1h2txyewy-In-Allow-ServerCapability
+Microsoft.DesktopAppInstaller_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-204845875...
+Microsoft.LockApp_cw5n1h2txyewyS-1-5-18-In-Allow-ServerCapability
+Microsoft.MicrosoftSolitaireCollection_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-...
+Microsoft.SecHealthUI_8wekyb3d8bbwe-In-Allow-ServerCapability
+Microsoft.SecHealthUI_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-1001-I...
+Microsoft.StorePurchaseApp_8wekyb3d8bbwe-In-Allow-ServerCapability
+Microsoft.StorePurchaseApp_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-1...
+Microsoft.Todos_8wekyb3d8bbwe-In-Allow-ServerCapability
+Microsoft.Todos_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-1001-In-Allo...
+Microsoft.Win32WebViewHost_cw5n1h2txyewy-In-Allow-ServerCapability
+Microsoft.Windows.CloudExperienceHost_cw5n1h2txyewy-In-Allow-ServerCapability
+Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewyS-1-5-18-In-Allow-ServerCapability
+Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy-In-Allow-ServerCapability
+Microsoft.WindowsFeedbackHub_8wekyb3d8bbwe-In-Allow-ServerCapability
+Microsoft.WindowsFeedbackHub_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759...
+Microsoft.WindowsStore_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-1001-...
+Microsoft.XboxGamingOverlay_8wekyb3d8bbwe-In-Allow-ServerCapability
+Microsoft.XboxGamingOverlay_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-...
+Microsoft.ZuneMusic_8wekyb3d8bbwe-In-Allow-ServerCapability
+Microsoft.ZuneMusic_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-1001-In-...
+MicrosoftWindows.Client.CBS_cw5n1h2txyewyS-1-5-18-In-Allow-ServerCapability
+MicrosoftWindows.Client.Core_cw5n1h2txyewyS-1-5-18-In-Allow-ServerCapability
+MicrosoftWindows.Client.OOBE_cw5n1h2txyewyS-1-5-18-In-Allow-ServerCapability
+MicrosoftWindows.Client.Photon_cw5n1h2txyewy-In-Allow-ServerCapability
+Microsoft-Windows-WLANSvc-ASP-CP-In
+MSTeams_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-1001-In-Allow-Server...
+NETDIS-DAS-In-UDP-Active
+NETDIS-FDPHOST-In-UDP-Active
+NETDIS-FDRESPUB-WSD-In-UDP-Active
+NETDIS-LLMNR-In-UDP-Active
+NETDIS-NB_Datagram-In-UDP-Active
+NETDIS-NB_Name-In-UDP-Active
+NETDIS-SSDPSrv-In-UDP-Active
+NETDIS-SSDPSrv-In-UDP-Teredo
+NETDIS-UPnPHost-In-TCP-Active
+NETDIS-UPnPHost-In-TCP-Teredo
+NETDIS-WSDEVNT-In-TCP-Active
+NETDIS-WSDEVNTS-In-TCP-Active
+NVS-FrameServer-In-TCP-NoScope
+NVS-FrameServer-In-UDP-NoScope
+OpenSSH-Server-In-TCP
+PlayTo-HTTPSTR-In-TCP-LocalSubnetScope
+PlayTo-HTTPSTR-In-TCP-NoScope
+PlayTo-HTTPSTR-In-TCP-PlayToScope
+PlayTo-In-RTSP-LocalSubnetScope
+PlayTo-In-RTSP-NoScope
+PlayTo-In-RTSP-PlayToScope
+PlayTo-In-UDP-LocalSubnetScope
+PlayTo-In-UDP-NoScope
+PlayTo-In-UDP-PlayToScope
+PlayTo-QWave-In-TCP-PlayToScope
+PlayTo-QWave-In-UDP-PlayToScope
+PlayTo-SSDP-Discovery-PlayToScope
+PlayTo-UPnP-Events-PlayToScope
+ProximityUxHost-Sharing-In-TCP-NoScope
+Remote Desktop
+RemoteAssistance-DCOM-In-TCP-NoScope-Active
+RemoteAssistance-In-TCP-EdgeScope-Active
+RemoteAssistance-PnrpSvc-UDP-In-EdgeScope-Active
+RemoteAssistance-RAServer-In-TCP-NoScope-Active
+RemoteAssistance-SSDPSrv-In-TCP-Active
+RemoteAssistance-SSDPSrv-In-UDP-Active
+WFDPRINT-DAFWSD-In-Active
+WFDPRINT-SCAN-In-Active
+WFDPRINT-SPOOL-In-Active
+WiFiDirect-KM-Driver-In-TCP
+WiFiDirect-KM-Driver-In-UDP
+WINRM-HTTP-In-TCP
+WINRM-HTTP-In-TCP-NoScope
+WirelessDisplay-Infra-In-TCP
+WirelessDisplay-In-TCP
+
+
+PS C:\Users\vagrant> $Rules = Get-NetFirewallRule -PolicyStore ActiveStore |
+>>     Where-Object {
+>>         $_.Enabled -eq "True" -and
+>>         $_.Direction -eq "Inbound" -and
+>>         $_.Action -eq "Allow"
+>>     }
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> $Overview = foreach ($Rule in $Rules) {
+>>     $Port      = $Rule | Get-NetFirewallPortFilter
+>>     $Address   = $Rule | Get-NetFirewallAddressFilter
+>>     $Interface = $Rule | Get-NetFirewallInterfaceFilter
+>>     $Service   = $Rule | Get-NetFirewallServiceFilter
+>>
+>>     [PSCustomObject]@{
+>>         Name          = $Rule.Name
+>>         Protocol      = $Port.Protocol
+>>         LocalPort     = $Port.LocalPort -join ","
+>>         RemoteAddress = $Address.RemoteAddress -join ","
+>>         Interface     = $Interface.InterfaceAlias -join ","
+>>         Service       = $Service.Service -join ","
+>>     }
+>> }
+PS C:\Users\vagrant>
+PS C:\Users\vagrant> $Overview | Format-Table -Wrap -AutoSize
+
+Name
+----
+WFDPRINT-SPOOL-In-Active
+CoreNet-IPv6-In
+DeliveryOptimization-UDP-In
+CoreNet-ICMP6-RA-In
+CoreNet-ICMP4-DUFRAG-In
+CoreNet-DHCP-In
+NETDIS-DAS-In-UDP-Active
+CoreNet-DHCPV6-In
+NETDIS-SSDPSrv-In-UDP-Teredo
+WFDPRINT-SCAN-In-Active
+NETDIS-FDPHOST-In-UDP-Active
+NETDIS-WSDEVNT-In-TCP-Active
+CoreNet-ICMP6-NDS-In
+RemoteAssistance-DCOM-In-TCP-NoScope-Active
+NETDIS-WSDEVNTS-In-TCP-Active
+RemoteAssistance-RAServer-In-TCP-NoScope-Active
+NETDIS-UPnPHost-In-TCP-Active
+NVS-FrameServer-In-UDP-NoScope
+WINRM-HTTP-In-TCP
+DeliveryOptimization-TCP-In
+CoreNet-ICMP6-RS-In
+WirelessDisplay-Infra-In-TCP
+NETDIS-FDRESPUB-WSD-In-UDP-Active
+RemoteAssistance-PnrpSvc-UDP-In-EdgeScope-Active
+DIAL-Protocol-Server-In-TCP-NoScope
+CoreNet-ICMP6-NDA-In
+NVS-FrameServer-In-TCP-NoScope
+NETDIS-NB_Name-In-UDP-Active
+CoreNet-ICMP6-PP-In
+CoreNet-Teredo-In
+RemoteAssistance-SSDPSrv-In-UDP-Active
+NETDIS-UPnPHost-In-TCP-Teredo
+NETDIS-SSDPSrv-In-UDP-Active
+CDPSvc-In-UDP
+CDPSvc-In-TCP
+MDNS-In-UDP-Private-Active
+NETDIS-LLMNR-In-UDP-Active
+CoreNet-ICMP6-PTB-In
+CoreNet-IPHTTPS-In
+AllJoyn-Router-In-TCP
+AllJoyn-Router-In-UDP
+CoreNet-ICMP6-LD-In
+CoreNet-ICMP6-DU-In
+NETDIS-NB_Datagram-In-UDP-Active
+CDPSvc-WFD-In-TCP
+WINRM-HTTP-In-TCP-NoScope
+WFDPRINT-DAFWSD-In-Active
+WirelessDisplay-In-TCP
+RemoteAssistance-SSDPSrv-In-TCP-Active
+ProximityUxHost-Sharing-In-TCP-NoScope
+CoreNet-IGMP-In
+CoreNet-ICMP6-LR2-In
+CoreNet-ICMP6-LQ-In
+CoreNet-ICMP6-LR-In
+DIAL-Protocol-Server-HTTPSTR-In-TCP-LocalSubnetScope
+CoreNet-ICMP6-TE-In
+MDNS-In-UDP-Domain-Active
+RemoteAssistance-In-TCP-EdgeScope-Active
+MDNS-In-UDP-Public-Active
+PlayTo-In-UDP-LocalSubnetScope
+PlayTo-In-UDP-NoScope
+PlayTo-In-RTSP-NoScope
+PlayTo-QWave-In-UDP-PlayToScope
+PlayTo-HTTPSTR-In-TCP-LocalSubnetScope
+PlayTo-QWave-In-TCP-PlayToScope
+PlayTo-SSDP-Discovery-PlayToScope
+PlayTo-UPnP-Events-PlayToScope
+PlayTo-In-RTSP-LocalSubnetScope
+PlayTo-In-UDP-PlayToScope
+PlayTo-HTTPSTR-In-TCP-NoScope
+PlayTo-HTTPSTR-In-TCP-PlayToScope
+PlayTo-In-RTSP-PlayToScope
+WiFiDirect-KM-Driver-In-TCP
+WiFiDirect-KM-Driver-In-UDP
+Microsoft-Windows-WLANSvc-ASP-CP-In
+Microsoft.AAD.BrokerPlugin_cw5n1h2txyewy-In-Allow-ServerCapability
+Microsoft.Win32WebViewHost_cw5n1h2txyewy-In-Allow-ServerCapability
+Microsoft.Windows.CloudExperienceHost_cw5n1h2txyewy-In-Allow-ServerCapability
+Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy-In-Allow-ServerCapability
+MicrosoftWindows.Client.Photon_cw5n1h2txyewy-In-Allow-ServerCapability
+{7DFCCC3F-A373-4B9F-88CD-9B58DAEF9683}
+{43FA2DF4-546C-4459-B08B-84F00FDA83C2}
+{CE4621E2-F821-4F02-96BD-616DC562080B}
+{9920F178-605B-4227-838F-AACBF6421058}                                                 {376F1C36-88BE-4982-BCF3-4E275B51C924}                                                 Microsoft.ZuneMusic_8wekyb3d8bbwe-In-Allow-ServerCapability                            OpenSSH-Server-In-TCP                                                                  {6700331B-F72D-4603-A86C-DC99B8B0CFC1}                                                 {28CDE5BD-5C4E-4FC4-A9FA-96F849E83AEF}                                                 Remote Desktop                                                                         Microsoft.StorePurchaseApp_8wekyb3d8bbwe-In-Allow-ServerCapability                     Microsoft.Todos_8wekyb3d8bbwe-In-Allow-ServerCapability                                Microsoft.XboxGamingOverlay_8wekyb3d8bbwe-In-Allow-ServerCapability                    Microsoft.WindowsFeedbackHub_8wekyb3d8bbwe-In-Allow-ServerCapability                   Microsoft.SecHealthUI_8wekyb3d8bbwe-In-Allow-ServerCapability                          Microsoft.LockApp_cw5n1h2txyewyS-1-5-18-In-Allow-ServerCapability                      Microsoft.Windows.ShellExperienceHost_cw5n1h2txyewyS-1-5-18-In-Allow-ServerCapability  MicrosoftWindows.Client.CBS_cw5n1h2txyewyS-1-5-18-In-Allow-ServerCapability            MicrosoftWindows.Client.Core_cw5n1h2txyewyS-1-5-18-In-Allow-ServerCapability           MicrosoftWindows.Client.OOBE_cw5n1h2txyewyS-1-5-18-In-Allow-ServerCapability           {1237921D-BB4F-460D-ADD8-2719CBF0A3CA}                                                 {E4B30BE3-AF3F-4DF5-8F11-AAB8402C7E75}                                                 {347E9510-18DA-424E-892F-31C9D4CD4FC4}                                                 {49BA0EB1-316C-4FCB-A9F3-8DC361171627}                                                 {A9DFB06F-DE53-44D5-919A-81AB100A97BD}                                                 {04272298-8546-4BF9-BB46-485E07800DFF}                                                 {901848F0-0F10-4DC0-8231-1264735839B3}                                                 {181EF35E-E765-485A-B1AA-5CA6F72B1621}                                                 EdgeWebView2-MDNS-In-UDP                                                               Microsoft.ZuneMusic_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-1001-In-All ow-ServerCapability                                                                    Microsoft.XboxGamingOverlay_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-100 1-In-Allow-ServerCapability                                                            Microsoft.WindowsStore_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-1001-In- Allow-ServerCapability                                                                 Microsoft.SecHealthUI_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-1001-In-A llow-ServerCapability                                                                  Microsoft.StorePurchaseApp_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-1001 -In-Allow-ServerCapability                                                             Microsoft.Todos_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-1001-In-Allow-S erverCapability                                                                        MSTeams_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-1001-In-Allow-ServerCap ability                                                                                Microsoft.WindowsFeedbackHub_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-10 01-In-Allow-ServerCapability                                                           Microsoft.MicrosoftSolitaireCollection_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-204 8458759-1001-In-Allow-ServerCapability                                                 Microsoft.DesktopAppInstaller_8wekyb3d8bbweS-1-5-21-1502646890-1215459072-2048458759-1 001-In-Allow-ServerCapability                                                          {DD832481-E66C-4331-A86C-D1A36BA9CCB6}                                                 {7DB728A6-DB4C-4715-BDC2-F7951DEC639A}                                                                                                                                                                                                                               PS C:\Users\vagrant> Test-NetConnection server1.WS26-JD.hogent -Port 80                                                                                                       
+ComputerName     : server1.WS26-JD.hogent
+RemoteAddress    : 192.168.26.10
+RemotePort       : 80
+InterfaceAlias   : Ethernet 2
+SourceAddress    : 192.168.26.100
+TcpTestSucceeded : True
+
+
+
+PS C:\Users\vagrant> Test-NetConnection server1.WS26-JD.hogent -Port 53
+
+
+ComputerName     : server1.WS26-JD.hogent
+RemoteAddress    : 192.168.26.10
+RemotePort       : 53
+InterfaceAlias   : Ethernet 2
+SourceAddress    : 192.168.26.100
+TcpTestSucceeded : True
+
+
+
+PS C:\Users\vagrant> Test-NetConnection server2.WS26-JD.hogent -Port 53
+
+
+ComputerName     : server2.WS26-JD.hogent
+RemoteAddress    : 192.168.26.20
+RemotePort       : 53
+InterfaceAlias   : Ethernet 2
+SourceAddress    : 192.168.26.100
+TcpTestSucceeded : True
+
+
+
+PS C:\Users\vagrant> Test-NetConnection server3.WS26-JD.hogent -Port 443
+
+
+ComputerName     : server3.WS26-JD.hogent
+RemoteAddress    : 192.168.26.30
+RemotePort       : 443
+InterfaceAlias   : Ethernet 2
+SourceAddress    : 192.168.26.100
+TcpTestSucceeded : True
+
+
+
+PS C:\Users\vagrant>
