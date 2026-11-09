@@ -81,10 +81,13 @@ if ($InternalAdapter.Status -ne "Up") {
 
 $InternalDefaultRoutes = @(
     Get-NetRoute `
-        -InterfaceIndex $InternalIndex `
         -AddressFamily IPv4 `
-        -DestinationPrefix "0.0.0.0/0" `
-        -PolicyStore ActiveStore
+        -PolicyStore ActiveStore `
+        -ErrorAction Stop |
+        Where-Object {
+            $_.InterfaceIndex -eq $InternalIndex -and
+            $_.DestinationPrefix -eq "0.0.0.0/0"
+        }
 )
 
 if ($InternalDefaultRoutes.Count -gt 0) {

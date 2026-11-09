@@ -115,7 +115,7 @@ Vagrant.configure("2") do |config|
     end
 
     # 1. Host-Only IP instellen.
-    server1.vm.ion "server1-network",
+    server1.vm.provision "server1-network",
       type: "shell",
       path: "scripts/configure-network.ps1",
       args: "-IPAddress 192.168.26.10"

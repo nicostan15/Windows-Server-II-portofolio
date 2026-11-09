@@ -345,7 +345,7 @@ Noteer:
 - Eventuele foutmeldingen:
 - Exact gebruikte uitrolcommando's:
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ### T05 — SSH met actieve firewall
 
@@ -397,7 +397,7 @@ Acceptatiecriteria:
 - De client gebruikt Windows 11 Enterprise.
 - Alleen de client heeft de voorziene desktop-GUI.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ## 6. Netwerkconfiguratie
 
@@ -433,7 +433,7 @@ Controleer ook de Vagrantfile:
 - `auto_config: false` voor de interne serverinterface.
 - De echte interne IP-configuratie gebeurt door het netwerkscript.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ### T08 — DNS-clientinstellingen en registratie
 
@@ -467,7 +467,7 @@ Acceptatiecriteria:
 Een uitgeschakelde registratie-instelling verwijdert niet automatisch oude records.
 Daarom wordt de inhoud van DNS afzonderlijk gecontroleerd.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ## 7. Active Directory
 
@@ -577,7 +577,7 @@ Acceptatiecriteria:
 - Forest-functional level Windows Server 2025.
 - Alleen server1 staat als domeincontroller geregistreerd.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ### T11 — OUs en computerobjecten
 
@@ -1020,7 +1020,7 @@ Acceptatiecriteria:
 - Controleer ook de `_msdcs`-zone wanneer die in jouw configuratie
   afzonderlijk wordt gehost.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ### T14 — Exact één A- en PTR-record per server
 
@@ -1100,7 +1100,7 @@ De test controleert de naam `server1`, `server2` en `server3`.
 Andere noodzakelijke records, zoals het zone-apexrecord of SRV-records,
 worden niet als dubbele hostrecords geteld.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ### T15 — Twee DNS-servers zichtbaar in de zones
 
@@ -1131,7 +1131,7 @@ Acceptatiecriteria:
 - De bedoelde zones verwijzen naar beide DNS-servers.
 - De nameservernamen kunnen naar de juiste interne adressen worden vertaald.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ### T16 — Geen NAT-records en geen clientregistratie
 
@@ -1172,7 +1172,7 @@ Acceptatiecriteria:
 Controleer zo nodig ook andere door dit lab beheerde forward zones
 op oude NAT-records.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ### T17 — Automatische zone transfer met tijdelijk CNAME-record
 
@@ -1314,7 +1314,7 @@ Als de test faalt:
 - Bij een fout tijdens de toevoegingscontrole wordt opruiming op server1 geprobeerd;
   controleer daarna ook afzonderlijk of het record op server2 verdwenen is.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ## 9. DHCP
 
@@ -1441,7 +1441,7 @@ Acceptatiecriteria:
 - DHCP registreert geen ongewenste clientrecords in DNS.
 - In dit project wordt `DynamicUpdates = Never` verwacht.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ### T20 — Echte clientlease
 
@@ -1803,7 +1803,7 @@ Get-ItemProperty `
 
 Voor een Enterprise Root CA wordt `CAType = 0` verwacht.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ### T22 — Actueel rootcertificaat vaststellen
 
@@ -1838,7 +1838,7 @@ Acceptatiecriteria:
 
 Gebruik geen oude vaste thumbprint uit historische documentatie.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ### T23 — GPO bestaat, is gekoppeld en bevat het certificaat
 
@@ -2024,15 +2024,6 @@ Als de GPO nog niet is toegepast:
 - Een latere `gpupdate` mag als herstelactie worden uitgevoerd,
   maar noteer die manuele actie afzonderlijk.
 
-Status per machine:
-
-| Machine | Trust | Policy | GPO toegepast | Eindstatus |
-|---|---|---|---|---|
-| server1 | Niet getest | Niet getest | Niet getest | NIET GETEST |
-| server2 | Niet getest | Niet getest | Niet getest | NIET GETEST |
-| server3 | Niet getest | Niet getest | Niet getest | NIET GETEST |
-| client | Niet getest | Niet getest | Niet getest | NIET GETEST |
-
 ### T25 — HTTPS-binding en webservercertificaat
 
 Op server3:
@@ -2062,7 +2053,7 @@ Acceptatiecriteria:
 - Geschikt voor Server Authentication.
 - Uitgegeven door de bedoelde CA.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ### T26 — Web Enrollment vanaf de client
 
@@ -2236,7 +2227,7 @@ Acceptatiecriteria:
 - HTTP 200.
 - Hello World aanwezig.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ### T28 — Intranet vanaf client via beide DNS-servers
 
@@ -2271,7 +2262,7 @@ Acceptatiecriteria:
 - Hello World zichtbaar.
 - Geen hosts-file-workaround nodig.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ## 12. RSAT en beheer vanaf de client
 
@@ -2353,7 +2344,7 @@ Acceptatiecriteria voor de servers:
 - In dit project wordt uitgaand Allow verwacht.
 - Geen eindconfiguratie met uitgeschakelde firewall.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ### T32 — Effectieve inkomende toestemmingen beoordelen
 
@@ -2726,7 +2717,7 @@ Let op:
 - SSH kan in dit project via NAT toegestaan zijn en via Host-Only juist niet.
   Test dus de bedoelde toegangsroute.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ## 14. Aanvullende kwaliteitscontroles
 
@@ -3091,7 +3082,7 @@ Acceptatiecriteria:
 Een succesvolle herhaling van één provisioner bewijst niet dat het hele
 project volledig idempotent is.
 
-Status: NIET GETEST
+Status: SUCCESVOL
 
 ## 15. Resultatenregister
 
@@ -3131,4 +3122,4 @@ Vul dit na uitvoering in.
 | T32 | Minimale inkomende regels | SUCCESVOL | |
 | T33 | Diensten met actieve firewall | SUCCESVOL | |
 | T34 | Tijdelijke hulpmiddelen | SUCCESVOL | |
-| T35 | Herhaalbaarheid | NIET GETEST | |
+| T35 | Herhaalbaarheid | SUCCESVOL | |

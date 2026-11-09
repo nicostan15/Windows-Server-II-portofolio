@@ -48,7 +48,7 @@ foreach ($U in $Users) {
             -UserPrincipalName $UpnName `
             -Path $TargetOU `
             -AccountPassword $DefaultPassword `
-            -ChangePasswordAtLogon $true `
+            -ChangePasswordAtLogon $false `
             -Enabled $true
 
         Write-Host "Gebruiker aangemaakt: $($U.SamAccountName) in $TargetOU" -ForegroundColor Green
