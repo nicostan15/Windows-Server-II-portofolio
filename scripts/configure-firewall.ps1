@@ -254,6 +254,16 @@ try {
         -InterfaceAlias $LabInterface `
         -RemoteAddress $LabSubnet
 
+    # PowerShell/CIM-beheer vanaf het interne labnetwerk.
+    # NAT-beheer blijft via de afzonderlijke NAT-regel werken.
+    Set-LabAllowRule `
+        -Name 'WS2-Managed-WinRM-Lab' `
+        -Protocol TCP `
+        -LocalPort '5985' `
+        -InterfaceAlias $LabInterface `
+        -RemoteAddress $LabSubnet `
+        -Service 'Any'
+
     # Ping voor labdiagnostiek, alleen intern.
     Set-LabAllowRule `
         -Name 'WS2-Managed-Ping-Lab' `

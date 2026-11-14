@@ -98,7 +98,7 @@ Voor het beheer van het Active Directory domein `WS26-JD.hogent` zijn de volgend
 | **a.smit.adm** | `a.smit.adm@WS26-JD.hogent` | Domain Admin | `OU=Beheer` | `W@chtwoord2026!` |
 | **p.jansen** | `p.jansen@WS26-JD.hogent` | Domain User (Gewone gebruiker) | `OU=Medewerkers` | `W@chtwoord2026!` |
 | **m.peeters** | `m.peeters@WS26-JD.hogent` | Domain User (Gewone gebruiker) | `OU=Medewerkers` | `W@chtwoord2026!` |
-| **vagrant** | `WS26-JD\vagrant` | Domain Admin (Geautomatiseerd beheer) | `CN=Users` | *Standaard Vagrant wachtwoord* (`vagrant`) |
+| **vagrant** | `CLIENT\vagrant` | Domain Admin (Geautomatiseerd beheer) | `CN=Users` | *Standaard Vagrant wachtwoord* (`vagrant`) |
 
 > **DSRM Wachtwoord (Active Directory Restore Mode):** `JouwSterkWachtwoord123!` (geconfigureerd bij DC-promotie op server1).
 
@@ -142,22 +142,32 @@ vagrant up
    * Statische Host-Only IP-configuratie (`192.168.26.30/24`).
    * Automatische domeinjoin in `OU=Servers,DC=WS26-JD,DC=hogent`.
    * Installatie van Active Directory Certificate Services (AD CS) als **Enterprise Root CA** (`WS26-JD-Root-CA`).
-   * Installatie van **CA Web Enrollment** (`/CertSrv`) inclusief HTTPS-binding (poort 443) met een door de eigen CA uitgegeven certificaat en automatische HTTP (poort 80) **302 Redirect**.
+   * Installatie van **CA Web Enrollment** (`/CertSrv`).
+   De certificaataanvraag, HTTPS-binding en HTTP-redirect worden
+   daarna automatisch ingericht tijdens de CA-eindfase via
+   `lab-finalize` op de client.
    * Publicatie van het CA Root-certificaat in Active Directory (`certutil -dspublish`).
    * Installatie van de **DHCP-serverrol** met een actieve scope `192.168.26.100`–`192.168.26.200` (exclusion `192.168.26.151`–`192.168.26.200`), instelling van DHCP-opties (Option 6 DNS, Option 15 Domain Name) en autorisatie in Active Directory.
 
-4. **Geautomatiseerde Triggers & CA Trust GPO:**
-   * Na het starten van server3 voert Vagrant automatisch een trigger uit op server1:
-     * Geef de WebServer-template de juiste DACL-rechten.
-     * Maak de Group Policy Object **`WS26 - Vertrouw Root CA`** aan en koppel deze aan de domeinroot.
-     * Automatische verificatie van Web Enrollment en CA-trust via PowerShell.
-
-5. **Uitrol client (Windows 11):**
+4. **Uitrol client (Windows 11):**
    * Verkrijgt een dynamisch IP-adres via DHCP van server3.
-   * Automatische installatie van de benodigde **RSAT Tools** (AD DS, DNS, DHCP, GPMC).
-   * Automatische domeinjoin in `OU=Clients,DC=WS26-JD,DC=hogent`.
-   * Vernieuwen van het Group Policy beleid (`gpupdate /force`), waarna het CA Root-certificaat automatisch wordt toegevoegd aan de `Trusted Root Certification Authorities` store.
-   * Verificatie van toegang tot het intranet.
+   * Installeert de benodigde RSAT-tools.
+   * Past het clientfirewallbeleid toe.
+   * Voegt de client toe aan `OU=Clients,DC=WS26-JD,DC=hogent`.
+   * Herstart de client na de domeinjoin.
+
+5. **Automatische CA-eindfase via `lab-finalize`:**
+   * Wordt uitgevoerd als laatste provisioner van de client.
+   * Controleert of server1 en server3 draaien en via Vagrant bereikbaar zijn.
+   * Configureert de WebServer-template op server1.
+   * Configureert HTTPS voor Web Enrollment op server3.
+   * Configureert en koppelt de GPO `WS26 - Vertrouw Root CA`.
+   * Voert de rootvertrouwen- en Web Enrollment-stappen op server1 uit.
+   * Haalt het actuele publieke CA-certificaat op van server3 en
+     brengt dit als referentiebestand over naar de client.
+   * Voert `client-verify-ca` uit met `-ExpectedCertificatePath`.
+   * Het overgebrachte referentiebestand wordt niet door deze
+     overdrachtsstap geïmporteerd in de vertrouwde certificaatopslag.
 
 ---
 
@@ -198,30 +208,55 @@ Get-DhcpServerInDC
 ```
 * **Verwacht resultaat:** Scope `192.168.26.100`–`200` is `Active`. DNS-servers staan op `192.168.26.10` en `192.168.26.20`. Server3 is vermeld als geautoriseerde DHCP-server.
 
-#### D. CA Web Enrollment & Redirect (server1 of client)
+#### D. CA Web Enrollment & Redirect
+
+Uitvoeren op de host, vanuit de projectmap.
+De controle zelf draait via Vagrant op server1.
+
 ```powershell
 vagrant provision server1 --provision-with server1-verify-web-enrollment
 ```
-* **Verwacht resultaat:**
-  * HTTP-ingang `http://server3.WS26-JD.hogent/CertSrv/` retourneert status `302 Found`.
-  * Redirect verwijst naar `https://server3.WS26-JD.hogent/certsrv/Default.asp`.
-  * HTTPS-pagina retourneert HTTP status `200 OK` met titel `Microsoft Active Directory Certificate Services`.
 
-#### E. Client CA-Trust & Intranet (client)
+#### E. Automatische CA-eindfase en clientcontrole
+
+Uitvoeren op de host, vanuit de projectmap, terwijl alle VM's draaien:
+
 ```powershell
-vagrant provision client --provision-with client-verify-ca
+vagrant provision client --provision-with lab-finalize
 ```
-* **Verwacht resultaat:** `Root-CA aanwezig:` toont het certificaat met thumbprint in `Cert:\LocalMachine\Root`. `Intranet is bereikbaar: HTTP 200.`
 
-#### F. SSH-toegang met actieve Firewall
+Verwacht resultaat:
+* De CA-afhankelijke stappen worden in de ingestelde volgorde uitgevoerd.
+* Het actuele publieke CA-certificaat wordt van server3 opgehaald.
+* De clientcontrole gebruikt dit certificaat als referentie.
+* De controle eindigt zonder fouten.
+* Vagrant meldt:
+  `Automatische CA-naverwerking en clientcontrole geslaagd.`
+
+#### F. SSH-toegang met actieve firewall
+
+Voer elke opdracht afzonderlijk uit op de host, vanuit de projectmap.
+Sluit elke SSH-sessie met `exit` voordat je de volgende opent.
+
 ```powershell
 vagrant ssh server1
+```
+
+```powershell
 vagrant ssh server2
+```
+
+```powershell
 vagrant ssh server3
+```
+
+```powershell
 vagrant ssh client
 ```
-* **Verwacht resultaat:** Alle VM's zijn via SSH bereikbaar terwijl de Windows Defender Firewall ingeschakeld is met `DefaultInboundAction = Block`.
 
+Verwacht resultaat: alle VM's zijn via SSH bereikbaar.
+De firewallstatus en default policies worden afzonderlijk
+met de firewallcontroles bevestigd.
 ---
 
 ## 2. Deel 2: Huidige Status van het Project

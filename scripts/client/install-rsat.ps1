@@ -10,6 +10,7 @@
     - DNS Server Tools
     - DHCP Server Tools
     - Group Policy Management Tools
+    - CertificateServices
 
     Reeds geinstalleerde onderdelen worden overgeslagen.
     Domeinjoin en remote beheer worden niet door dit script geconfigureerd.
@@ -28,6 +29,7 @@ $Capabilities = @(
     "Rsat.Dns.Tools~~~~0.0.1.0"
     "Rsat.DHCP.Tools~~~~0.0.1.0"
     "Rsat.GroupPolicy.Management.Tools~~~~0.0.1.0"
+    "Rsat.CertificateServices.Tools~~~~0.0.1.0"
 )
 
 $RestartNeeded = $false

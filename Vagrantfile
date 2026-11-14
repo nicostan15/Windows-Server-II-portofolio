@@ -45,14 +45,106 @@
 # - Standaard: installatie/configuratie tijdens de eerste uitrol.
 # - always: firewallbeleid, rootcertificaatpublicatie en clientcontrole
 #   opnieuw uitvoeren bij Vagrant up/reload.
-# - never: afhankelijkheidsgevoelige CA-stappen uitsluitend expliciet
-#   uitvoeren vanaf de host, in de volgorde uit de deployment guide.
-#
+# - never: afhankelijkheidsgevoelige CA-stappen niet rechtstreeks
+#   tijdens de gewone machineprovisioning uitvoeren.
+#   De clientprovisioner lab-finalize roept deze automatisch
+#   in de juiste volgorde aan.
+#   Gerichte onderhoudsopdrachten blijven mogelijk vanaf de host.
 # Voor gericht onderhoud:
 #   vagrant provision <machine> --provision-with <provisionernaam>
 #
 # Een volledige herprovisioning kan ook domeinjoin-/promotieprovisioners
 # met reboot: true opnieuw uitvoeren.
+
+require "tempfile"
+
+require Vagrant.source_root.join(
+  "plugins/provisioners/shell/provisioner"
+).to_s
+
+module WS2AutomaticFinalization
+  class Provisioner < Vagrant.plugin("2", :provisioner)
+    def provision
+      server1 = @machine.env.machine(
+        :server1,
+        @machine.provider_name
+      )
+
+      server3 = @machine.env.machine(
+        :server3,
+        @machine.provider_name
+      )
+
+      [server1, server3].each do |machine|
+        unless machine.state.id == :running
+          raise "#{machine.name} draait niet. Start de volledige omgeving."
+        end
+
+        unless machine.communicate.ready?
+          raise "#{machine.name} is niet bereikbaar via Vagrant."
+        end
+      end
+
+      run_shell(server1, "webserver-template")
+      run_shell(server3, "server3-web-https")
+      run_shell(server1, "ca-trust-gpo")
+      run_shell(server1, "server1-trust-root-ca")
+      run_shell(server1, "server1-verify-web-enrollment")
+
+      # Het publieke referentiecertificaat overbrengen.
+      # Dit importeert niets in de vertrouwde certificaatopslag.
+      Tempfile.create(["ws2-current-root-", ".cer"]) do |file|
+        local_path = file.path
+        file.close
+
+        server3.communicate.download(
+          "C:/LabCertificates/WS26-JD-Root-CA.cer",
+          local_path
+        )
+
+        @machine.communicate.upload(
+          local_path,
+          "C:/Windows/Temp/WS2-current-root-ca.cer"
+        )
+      end
+
+      run_shell(@machine, "client-verify-ca")
+
+      @machine.ui.success(
+        "Automatische CA-naverwerking en clientcontrole geslaagd."
+      )
+    end
+
+    private
+
+    def run_shell(machine, name)
+      definition = machine.config.vm.provisioners.find do |item|
+        item.name.to_s == name
+      end
+
+      unless definition && definition.type.to_s == "shell"
+        raise "Shell-provisioner ontbreekt: #{machine.name}/#{name}"
+      end
+
+      @machine.ui.info(
+        "CA-naverwerking: #{machine.name}/#{name}"
+      )
+
+      VagrantPlugins::Shell::Provisioner.new(
+        machine,
+        definition.config
+      ).provision
+    end
+  end
+
+  class Plugin < Vagrant.plugin("2")
+    name "ws2-automatic-finalization"
+
+    provisioner(:ws2_finalize) do
+      Provisioner
+    end
+  end
+end
 
 Vagrant.configure("2") do |config|
 
@@ -109,7 +201,7 @@ Vagrant.configure("2") do |config|
 
     server1.vm.provider "virtualbox" do |vb|
       vb.name = "server1"
-      vb.customize ["modifyvm", :id, "--groups", "/WS2"]
+      #vb.customize ["modifyvm", :id, "--groups", "/WS2"]
       vb.memory = "2048"
       vb.cpus = "2"
     end
@@ -181,7 +273,7 @@ Vagrant.configure("2") do |config|
       privileged: true
 
     # CA-vertrouwen via GPO.
-    # Expliciet uitvoeren nadat server3-ca succesvol afgerond is.
+    # Automatisch aangeroepen door lab-finalize nadat server3 klaar is.    
     server1.vm.provision "ca-trust-gpo",
       type: "shell",
       path: "scripts/server1/configure-ca-trust-gpo.ps1",
@@ -232,7 +324,7 @@ Vagrant.configure("2") do |config|
 
     server2.vm.provider "virtualbox" do |vb|
       vb.name = "server2"
-      vb.customize ["modifyvm", :id, "--groups", "/WS2"]
+      #vb.customize ["modifyvm", :id, "--groups", "/WS2"]
       vb.memory = "2048"
       vb.cpus = "2"
     end
@@ -297,7 +389,7 @@ Vagrant.configure("2") do |config|
 
     server3.vm.provider "virtualbox" do |vb|
       vb.name = "server3"
-      vb.customize ["modifyvm", :id, "--groups", "/WS2"]
+      #vb.customize ["modifyvm", :id, "--groups", "/WS2"]
       vb.memory = "2048"
       vb.cpus = "2"
     end
@@ -344,8 +436,8 @@ Vagrant.configure("2") do |config|
       ],
       privileged: true
 
-        # Alleen expliciet uitvoeren nadat de templatepermissies
-    # op server1 zijn geconfigureerd.
+    # Automatisch aangeroepen door lab-finalize nadat de
+    # templatepermissies op server1 zijn geconfigureerd.    
     server3.vm.provision "server3-web-https",
       type: "shell",
       path: "scripts/server3/configure-web-enrollment-https.ps1",
@@ -376,7 +468,7 @@ Vagrant.configure("2") do |config|
       ],
       privileged: true
 
-        # Firewall: voorlopig alleen expliciet uitvoeren.
+    # Firewallbeleid automatisch toepassen met run: "always".    
     server3.vm.provision "server3-firewall",
       type: "shell",
       path: "scripts/configure-firewall.ps1",
@@ -392,8 +484,9 @@ Vagrant.configure("2") do |config|
       run: "always",
       path: "scripts/server3/publish-root-ca.ps1"
 
-    # CA-afhankelijke naverwerking wordt expliciet vanaf de host uitgevoerd.
-    # Voorwaarden: server1 en server3 draaien; server3 is domeinlid en de CA is klaar.
+    # CA-afhankelijke naverwerking gebeurt automatisch via lab-finalize
+    # op de client, nadat de client aan het domein is toegevoegd.
+    # Server1 en server3 moeten dan draaien en bereikbaar zijn.
     #
     # Volgorde:
     # 1. server1: webserver-template
@@ -401,8 +494,10 @@ Vagrant.configure("2") do |config|
     # 3. server1: ca-trust-gpo
     # 4. server1: server1-trust-root-ca
     # 5. server1: server1-verify-web-enrollment
+    # 6. actueel publiek CA-certificaat naar client overbrengen
+    # 7. client: client-verify-ca
     #
-    # Geen geneste Vagrant-opdrachten vanuit after-up-triggers.
+    # Geen geneste Vagrant-opdrachten of after-up-triggers.  
   end
 
   # ==================================================================
@@ -421,7 +516,7 @@ Vagrant.configure("2") do |config|
 
     client.vm.provider "virtualbox" do |vb|
       vb.name = "client"
-      vb.customize ["modifyvm", :id, "--groups", "/WS2"]
+      #vb.customize ["modifyvm", :id, "--groups", "/WS2"]
       vb.memory = "2048"
       vb.cpus = "2"
     end
@@ -461,10 +556,25 @@ Vagrant.configure("2") do |config|
 
     # CA-vertrouwen bij iedere Vagrant up/reload controleren.
     # Een mislukte controle moet zichtbaar tot een fout leiden.
+    # Het actuele publieke CA-certificaat wordt door lab-finalize
+    # automatisch van server3 opgehaald en naar de client gekopieerd.
+    # verify-ca.ps1 bepaalt daaruit de verwachte thumbprint.
+    # Geen handmatige thumbprintaanpassing nodig na een herbouw.
+    # Deze controle wordt door lab-finalize aangeroepen.
     client.vm.provision "client-verify-ca",
       type: "shell",
-      run: "always",
-      path: "scripts/client/verify-ca.ps1"
+      run: "never",
+      privileged: true,
+      path: "scripts/client/verify-ca.ps1",
+      args: [
+        "-ExpectedCertificatePath",
+        "C:/Windows/Temp/WS2-current-root-ca.cer"
+      ]
+
+    # Automatische eindfase, nadat de client domeinlid is.
+    client.vm.provision "lab-finalize",
+      type: "ws2_finalize",
+      run: "always"
   end
 
 end
