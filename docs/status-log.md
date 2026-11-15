@@ -687,7 +687,7 @@ Rolgebonden firewallconfiguratie voltooid voor server1.
 
 ***
 
-## Huidige projectstatus
+## Tussenstand op 27 oktober 2026
 
 ### Eerder functioneel getest
 
@@ -727,4 +727,219 @@ Rolgebonden firewallconfiguratie voltooid voor server1.
 - Herhaalde uitvoering van de gecorrigeerde firewallprovisioners.
 - Volledige schone deployment zonder handmatige herstelstappen, met uitsluitend `vagrant up`.
 
-De afzonderlijke diensten zijn grotendeels functioneel getest. De volledige automatische herbouw is nog in uitvoering en wordt pas als geslaagd geregistreerd wanneer alle vier machines en de automatische eindcontroles succesvol zijn afgerond.
+***
+
+## 2026-10-30 — Scripts en testchecklist verder uitgewerkt
+
+Commit: `ec544748d620cac1733530d797eee1d199caa9e1`.
+
+- Week 6-checklist uitgebreid met automatisering, configuratieopruiming en een volledige uitroltest.
+- Scripts voor CA-verificatie, domeinjoin, firewall en rootvertrouwen bijgewerkt.
+- Foutafhandeling, herbruikbaarheid, uitvoer en logging verbeterd volgens de commitbeschrijving.
+- De volledige uitrol bleef een afzonderlijk te bewijzen test. Aanpassingen aan scripts betekenen niet automatisch dat de schone herbouw al geslaagd was.
+
+***
+
+## 2026-11-01 — Domeinjoin en documentatie bijgewerkt
+
+Commits: `587da1d8648e553a156d909cc21769058256a870` en `290ac9b566b3fdae764c65f73b7090b5ae976fec`.
+
+- Domeinjoinscript uitgebreid met foutafhandeling en DNS-validatie.
+- Week 6-checklist bijgewerkt.
+- Uitgebreidere controlelijsten toegevoegd en verouderde documentatie vervangen.
+- Controlepunten voor de eindtest verder uitgewerkt.
+
+***
+
+## 2026-11-03 — Server3-scripts opgesplitst en opgeslagen
+
+Commit: `86b57f104c90594d16ce1d168fe5897878e29fc6`.
+
+De volgende afzonderlijke scripts voor server3 zijn in deze commit opgenomen:
+
+- `configure-web-enrollment-https.ps1`: certificaataanvraag en HTTPS-binding voor Web Enrollment.
+- `dhcp.ps1`: DHCP-installatie, scope en exclusion.
+- `join-domain.ps1`: domeinjoin en DNS-instellingen.
+- `publish-root-ca.ps1`: publicatie van het publieke rootcertificaat in Active Directory.
+
+De eerdere log bevat al werkzaamheden aan deze onderdelen. Deze datum duidt de commit aan waarin de genoemde bestanden zijn opgeslagen, niet noodzakelijk de eerste implementatiedatum.
+
+***
+
+## 2026-11-04 — Code opgeruimd
+
+Commit: `de4de256036a6b317a8cf222b28047e0d397e7d8`.
+
+- Codestructuur aangepast voor leesbaarheid en onderhoud.
+- De commitbeschrijving bevat geen afzonderlijke testresultaten. Deze wijziging wordt daarom niet als bewijs van een volledig geslaagde herbouw geregistreerd.
+
+***
+
+## 2026-11-09 — Testresultaten en deploymentguide bijgewerkt
+
+Commit: `9cd922d6a7324f18ee45f9f2eb3a11140b00a0f7`.
+
+- Testdocumentatie bijgewerkt met geslaagde resultaten voor meerdere controles.
+- Gebruikersscript aangepast zodat een wachtwoordwijziging bij de volgende aanmelding niet verplicht is.
+- Selectie van de standaardroutes in het domeinjoinscript verbeterd.
+- Deploymentguide voor het project toegevoegd.
+- Welke tests geslaagd zijn, wordt bepaald door de bijbehorende resultaten; de commitbeschrijving alleen is geen bewijs dat ieder onderdeel opnieuw getest is.
+
+***
+
+## 2026-11-11 — Volledige schone herbouw geslaagd
+
+De bewaarde uitrollog bevat uitvoer van 11 november. Deze herbouw is later in de voorbereiding van de demo opnieuw bekeken. Na het verwijderen van de volledige omgeving is de deployment gestart met:
+
+```powershell
+vagrant up
+```
+
+De vier VM’s zijn opnieuw geïmporteerd en ingericht. Voor deze geslaagde herbouw waren geen losse herstel- of provisioningopdrachten nodig.
+
+### Server1
+
+- Vast intern adres `192.168.26.10/24` ingesteld en persistentie gecontroleerd.
+- Automatische DNS-registratie op NAT uitgeschakeld.
+- Nieuw forest en domein `WS26-JD.hogent` aangemaakt.
+- Domeinpromotie en herstart voltooid.
+- Domein-Administratorwachtwoord ingesteld.
+- OU’s Beheer, Medewerkers, Servers en Clients aangemaakt.
+- Gebruikers John Doe, Anna Smit, Piet Jansen en Marie Peeters aangemaakt.
+- John en Anna toegevoegd aan Domain Admins.
+- Primaire DNS-zones gecontroleerd en de reversezone aangemaakt.
+- A- en PTR-records voor de drie servers ingesteld.
+- NS-records, zoneoverdracht en notify voor server2 ingesteld.
+- Intranetrecord aangemaakt naar `192.168.26.10`.
+- IIS geïnstalleerd; lokale controle gaf HTTP 200 en de verwachte Hello World-inhoud.
+- Firewallprovisioning afgerond.
+
+### Server2
+
+- Vast intern adres `192.168.26.20/24` ingesteld.
+- Interne DNS ingesteld op server1.
+- Domeinjoin en herstart voltooid.
+- DNS-rol geïnstalleerd.
+- Secundaire zones aangemaakt voor `WS26-JD.hogent`, `26.168.192.in-addr.arpa` en `_msdcs.WS26-JD.hogent`.
+- Voor de drie zones een volledige zoneoverdracht aangevraagd.
+- Firewallprovisioning afgerond.
+- Het aanmaken van zones en aanvragen van transfers is onderscheiden van de aparte controle of records daadwerkelijk geladen zijn.
+
+### Server3
+
+- Vast intern adres `192.168.26.30/24` ingesteld.
+- Domeinjoin en herstart voltooid.
+- Enterprise Root CA `WS26-JD-Root-CA` geïnstalleerd; configuratie gaf `ErrorId 0`.
+- CA-service gecontroleerd als Running.
+- Publiek rootcertificaat geëxporteerd naar `C:\LabCertificates\WS26-JD-Root-CA.cer`.
+- Web Enrollment geïnstalleerd en de `/CertSrv`-webapplicatie gecontroleerd.
+- DHCP-scope `.100–.200` aangemaakt en geactiveerd, met exclusion `.151–.200`.
+- Optie 6 ingesteld op `192.168.26.10` en `192.168.26.20`.
+- Optie 15 ingesteld op `WS26-JD.hogent`; geen interne routeroptie toegevoegd.
+- Automatische DNS-updates door DHCP uitgeschakeld.
+- DHCP gebonden aan de interne interface en in AD geautoriseerd.
+- Firewallprovisioning afgerond.
+- Publicatie van het rootcertificaat in Active Directory geslaagd.
+
+### Client
+
+- DNS-registratie op beide actieve adapters uitgeschakeld.
+- RSAT geïnstalleerd voor AD, DNS, DHCP, groepsbeleid en Certificate Services.
+- Clientfirewall geconfigureerd.
+- Domeinjoin met de Clients-OU uitgevoerd en de client herstart.
+- Daarna de automatische CA-eindfase gestart.
+
+### Definitieve CA-eindfase
+
+De huidige Vagrantfile gebruikt de eigen provisioner `lab-finalize`. De oudere server3-trigger uit de notities van oktober is niet meer de huidige aanpak.
+
+De geslaagde volgorde in de log is:
+
+1. server1: `webserver-template`.
+2. server3: `server3-web-https`.
+3. server1: `ca-trust-gpo`.
+4. server1: `server1-trust-root-ca`.
+5. server1: `server1-verify-web-enrollment`.
+6. Actueel publiek rootcertificaat via de host naar de client kopiëren.
+7. client: `client-verify-ca`.
+
+- Templatepermissies toegepast en gecontroleerd.
+- Webservercertificaat ontvangen en aan HTTPS op server3 gekoppeld.
+- Trust-GPO aangemaakt en aan de domeinroot gekoppeld.
+- Rootvertrouwen op server1 na beleidsvernieuwing bevestigd.
+- Web Enrollment vanaf server1 gaf HTTP 302 naar HTTPS en daarna HTTP 200.
+- De client bepaalde de verwachte thumbprint uit het overgebrachte referentiecertificaat.
+- Rootcertificaat en computerbeleidsopslag op de client gecontroleerd.
+- Het clientverificatiescript importeerde zelf geen certificaat.
+- Intranetcontrole vanaf de client gaf HTTP 200 en Hello World.
+
+Actuele root-CA-thumbprint van deze herbouw:
+
+```text
+E98279E7D2384D86D942C4DC7F69D697A6985F3C
+```
+
+Webservercertificaat voor HTTPS op server3:
+
+```text
+8FCC1FCB46CF52DAA3F47A0CE48E4A56F5EDEF83
+```
+
+Dit zijn verschillende certificaten. Oudere thumbprints in deze log blijven historische gegevens en mogen niet gebruikt worden als actuele referentie.
+
+Afsluitende meldingen:
+
+```text
+PASS: verwachte Root-CA aanwezig, beleidsopslag aanwezig en certificaat geldig.
+PASS: intranet bereikbaar met HTTP 200 en Hello World.
+Automatische CA-naverwerking en clientcontrole geslaagd.
+```
+
+### Firewall tijdens deze herbouw
+
+- De drie servers kregen ingeschakelde Domain-, Private- en Public-profielen.
+- Standaard inkomend beleid: Block; uitgaand: Allow.
+- Rolgebonden regels en afzonderlijke NAT-beheerregels toegepast.
+- De client kreeg dezelfde standaard profielacties via het afzonderlijke clientscript.
+- Een succesvolle profielcontrole is niet hetzelfde als een volledige beoordeling van alle uitzonderingen. Poorten, adressen, interfaces en waar nodig servicefilters moeten samen beoordeeld worden.
+
+***
+
+## 2026-11-14 — Demovoorbereiding en videomontage
+
+- Opnameplan opgesteld voor een demo van maximaal tien minuten.
+- Spreektekst en te tonen codefragmenten uitgewerkt per onderdeel.
+- Architectuuroverzicht gemaakt voor de introductie.
+- De echte herbouwlog geselecteerd als deploymentbewijs.
+- Expliciete nslookup-controles via `192.168.26.10` en `192.168.26.20` waren geslaagd voor forward- en reverse-resolutie. De exacte uitvoeringsdatum van deze afzonderlijke controles is hier niet vastgelegd.
+- Voor de DNS-demo een tijdelijk record voorzien, met opruiming na de demonstratie. Een eventuele wachttijd wordt ingekort zonder de overdracht handmatig te forceren en die als automatisch voor te stellen.
+- Aanmeldfragmenten met Marie Peeters en John Doe voorbereid, met `whoami` als identiteitscontrole.
+- Schermopname en cameravideo beschikbaar voor montage in DaVinci Resolve.
+- Opstelling uitgewerkt met de schermopname op V1 en de webcamvideo verkleind op V2.
+- Snapping tijdens het monteren opnieuw ingeschakeld.
+- Definitieve export, upload naar Panopto en indiening zijn op dit moment nog niet als uitgevoerd bevestigd.
+
+***
+
+## 2026-11-15 — Documentatie nagekeken voor indiening
+
+- Deploymentguide herschreven in kortere, eenvoudigere taal.
+- Auteur ingevuld en repositoryadres opgenomen.
+- `CLIENT\vagrant` gecorrigeerd naar lokaal account voor Vagrant-beheer; niet meer omschreven als Domain Admin in `CN=Users`.
+- Verwijzing naar oude triggers vervangen door de huidige provisioner `lab-finalize`.
+- Voor `Get-DhcpServerInDC` expliciete aanmelding met het domein-Administratoraccount beschreven.
+- Dynamische SSH-hostpoort laten opzoeken met `vagrant ssh-config server3` in plaats van een vaste poort te veronderstellen.
+- Verouderde opmerking dat de schone herbouw nog moest gebeuren bijgewerkt.
+- Algemene claims afgezwakt en gekoppeld aan concrete controles en uitrolresultaten.
+- Deploymentguide compacter gemaakt zonder de opgenomen onderdelen te verwijderen.
+- Statuslog aangevuld met commitgegevens en de latere succesvolle herbouw.
+
+## Laatst bevestigde projectstatus — 15 november 2026
+
+- De schone herbouw van alle vier de VM’s is geslaagd met één `vagrant up`, zonder losse herstelopdrachten tijdens die geslaagde uitrol.
+- De automatische CA-eindfase en clientcontrole zijn geslaagd.
+- Rootvertrouwen en de beleidsopslag zijn tijdens de eindfase op de client bevestigd.
+- Web Enrollment is tijdens de eindfase vanaf server1 gecontroleerd; de clientcontrole testte daarnaast het intranet.
+- Forward- en reverse-resolutie via beide DNS-servers zijn afzonderlijk succesvol getest.
+- De eerdere GUI- en aanmeldtests blijven afzonderlijke functionele controles. De herbouwlog bewijst niet dat alle GUI-controles na deze herbouw opnieuw interactief uitgevoerd zijn.
+- De documentatie is bijgewerkt. PDF-export, definitieve videopublicatie en indiening worden pas als afgerond geregistreerd wanneer ze daadwerkelijk uitgevoerd zijn.

@@ -3,8 +3,8 @@
 **Start:** 24/09/2026 · **Deadline indienen:** zondag 15/11/2026, 15:00
 **Vuistregel uit de opdracht:** scripts + omgeving werkend tegen **08/11**, zodat de laatste week vrij is voor de demo-video (max. 10 min, webcam + micro verplicht, delen via Panopto met beide lectoren).
 
-> Let op: definitieve versie van de opdracht verschijnt pas op 11/10/2026 — check dan of er wijzigingen zijn.
-> Vagrant boxes kunnen na **1 oktober** verdwijnen → zorg voor een **lokale kopie** vóór die datum!
+De definitieve opdrachtversie is gecontroleerd op wijzigingen.
+De gebruikte Vagrant-boxen zijn lokaal gedownload.
 
 ---
 
@@ -43,7 +43,10 @@
 
 - [x] DHCP-rol installeren op server3
 - [x] Scope instellen: 192.168.26.100–200 (151–200 nog niet gebruiken)
-- [x] Relevante DHCP-opties instellen (nadenken welke zinvol zijn, niet zomaar Windows Server I overnemen)(Optie 6 vertelt de client welke DNS-servers hij moet gebruiken. Je opdracht voorziet twee interne DNS-servers, dus beide adressen horen in de configuratie voor de client.)(Jouw DNS-domeinnaam, Dit is het DNS-suffix/zoekdomein voor de verbinding. De cursus vermeldt dat dit typisch het rootdomein van Active Directory is. Het instellen van deze optie is niet hetzelfde als de client aan het domein toevoegen; de domeinjoin blijft een aparte stap.)
+- [x] DHCP-opties ingesteld:
+  - Optie 6: DNS-servers `192.168.26.10` en `192.168.26.20`.
+  - Optie 15: DNS-domeinnaam `WS26-JD.hogent`.
+  - De domeinjoin blijft een afzonderlijke stap.
 - [x] Certification Authority installeren op server3
 - [x] GPO maken zodat CA automatisch vertrouwd wordt door alle domeinleden
 - [x] Web Enrollment Role Service testen via `http://FQDN/CertSrv`
@@ -62,27 +65,28 @@
 
 ## Week 6 — 02/11 t/m 08/11: Automatiseren, testen & afwerken scripts
 
-- [ ] Server2 automatisch aan het domein toevoegen en controleren
-- [ ] Root-CA-vertrouwen controleren op alle vier de machines
-- [ ] Volledige omgeving vanaf nul opnieuw uitrollen met je scripts (test herhaalbaarheid!)
-- [ ] Scripts namen regelen, consitente benaming.
-- [ ] Scripts inhoud onnodige zaken weglaten
-- [ ] Waar mogelijk: scripts laten uitvoeren via Vagrant/Packer i.p.v. manueel (nice-to-have, geen must)
-- [ ] Alle scripts opkuisen, herbruikbaar maken (gebruikers/OU's makkelijk aanpasbaar)
-- [ ] Bugs/edge cases oplossen (bv. shared folder niet beschikbaar na domain join → scripts lokaal kopiëren)
-- [ ] **Doel: scripts + omgeving 100% werkend en getest tegen zondag 08/11**
+- [x] Server2 automatisch aan het domein toevoegen en controleren
+- [x] Root-CA-vertrouwen controleren op alle vier de machines
+- [x] Volledige omgeving vanaf nul opnieuw uitrollen met je scripts (test herhaalbaarheid!)
+- [x] Scripts namen regelen, consitente benaming.
+- [x] Scripts inhoud onnodige zaken weglaten
+- [x] Waar mogelijk: scripts laten uitvoeren via Vagrant/Packer i.p.v. manueel (nice-to-have, geen must)
+- [x] Alle scripts opkuisen, herbruikbaar maken (gebruikers/OU's makkelijk aanpasbaar)
+- [x] Bugs/edge cases oplossen (bv. shared folder niet beschikbaar na domain join → scripts lokaal kopiëren)
+- Oorspronkelijk doel: scripts en omgeving werkend tegen 08/11.
+- [x] Volledige schone herbouw succesvol afgerond op 11/11.
 
 ## Week 7 — 09/11 t/m 15/11: Documentatie, video & indienen
 
-- [ ] Deployment guide schrijven (`readme.pdf`, max. 8 pagina's): stappenplan (dummy-proof), gebruikers + wachtwoorden, status/reflectie, conclusie
-- [ ] Demo-video opnemen (max. 10 min, webcam + micro verplicht):
+- [x] Deployment guide schrijven (`readme.pdf`, max. 8 pagina's): stappenplan (dummy-proof), gebruikers + wachtwoorden, status/reflectie, conclusie
+- [x] Demo-video opnemen (max. 10 min, webcam + micro verplicht):
   - ±6 min: uitrol via scripts + korte uitleg per script
   - ±4 min: demo van de diensten (AD, DNS zone transfer, DHCP, CA, IIS)
-- [ ] Video pauzeren tijdens lange uitrol-stappen om onder 10 minuten te blijven
-- [ ] Video uploaden naar Panopto en delen met jeroen.courtens@hogent.be en pieterjan.maenhaut@hogent.be
-- [ ] ZIP samenstellen: `WS2-2627-EP1-NaamVoornaam.zip` met `readme.pdf`, `demo.txt` (link naar video), map `scripts/`
-- [ ] Controleren: ZIP max. 5 MB (geen ISO's, `.vagrant`-folder, installers meenemen)
-- [ ] **Indienen via Orion vóór zondag 15/11/2026, 15:00** — niet wachten tot het laatste moment!
+- [x] Video pauzeren tijdens lange uitrol-stappen om onder 10 minuten te blijven
+- [x] Video uploaden naar Panopto en delen met jeroen.courtens@hogent.be en pieterjan.maenhaut@hogent.be
+- [x] ZIP samenstellen: `WS2-2627-EP1-NaamVoornaam.zip` met `readme.pdf`, `demo.txt` (link naar video), map `scripts/`
+- [x] Controleren: ZIP max. 5 MB (geen ISO's, `.vagrant`-folder, installers meenemen)
+- [x] **Indienen via Orion vóór zondag 15/11/2026, 15:00** — niet wachten tot het laatste moment!
 
 ---
 
@@ -99,5 +103,3 @@
 | IIS | Hello World via `http://intranet.$domein` |
 | Firewall | enkel noodzakelijke inkomende regels + correcte default policy |
 | Indiening | ZIP ≤5MB, `readme.pdf` (≤8p), `demo.txt`, `scripts/` |
-
-Succes met deel 1 — en denk eraan: eerst zorgen dat alles werkt, pas daarna verder automatiseren.

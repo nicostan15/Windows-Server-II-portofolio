@@ -38,7 +38,9 @@ $Credential = [PSCredential]::new(
     $SecurePassword
 )
 
+$env:ADPS_LoadDefaultDrive = '0'
 Import-Module ActiveDirectory -ErrorAction Stop
+Write-Output 'Active Directory-module geladen.'
 
 $ADParameters = @{
     Server      = $DomainController

@@ -201,7 +201,6 @@ Vagrant.configure("2") do |config|
 
     server1.vm.provider "virtualbox" do |vb|
       vb.name = "server1"
-      #vb.customize ["modifyvm", :id, "--groups", "/WS2"]
       vb.memory = "2048"
       vb.cpus = "2"
     end
@@ -324,7 +323,6 @@ Vagrant.configure("2") do |config|
 
     server2.vm.provider "virtualbox" do |vb|
       vb.name = "server2"
-      #vb.customize ["modifyvm", :id, "--groups", "/WS2"]
       vb.memory = "2048"
       vb.cpus = "2"
     end
@@ -389,7 +387,6 @@ Vagrant.configure("2") do |config|
 
     server3.vm.provider "virtualbox" do |vb|
       vb.name = "server3"
-      #vb.customize ["modifyvm", :id, "--groups", "/WS2"]
       vb.memory = "2048"
       vb.cpus = "2"
     end
@@ -516,7 +513,6 @@ Vagrant.configure("2") do |config|
 
     client.vm.provider "virtualbox" do |vb|
       vb.name = "client"
-      #vb.customize ["modifyvm", :id, "--groups", "/WS2"]
       vb.memory = "2048"
       vb.cpus = "2"
     end
